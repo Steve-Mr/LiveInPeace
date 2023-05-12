@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Wish Me Silence</string>
+    <string name="to_be_or_not">To Silence, or Not to Silence</string>
+    <string name="volume_comment_0">Shhhhhhh…</string>
+    <string name="volume_comment_1">Perfectly Balanced, As All Things Should Be…</string>
+    <string name="volume_comment_2">What did you say? I can\'t hear you!</string>
+    <string name="volume_comment_3">How about that ASMR, huh? Pretty soothing, don\'t you think?</string>
+    <string name="volume_comment_4">Let\'s ROCK</string>
+    <string name="current_volume_percent">Current volume percentage is %2$d%%\n%1$s</string>
+    <string name="qstile_active">Be Aware</string>
+    <string name="qstile_inactive">Anyway</string>
+    <string name="default_channel">Foreground Service</string>
+    <string name="default_channel_description">I am watching your volume.</string>
+    <string-array name="array_volume_comment">
+        <item>Shhhhhhh…</item>
+        <item>Perfectly Balanced, As All Things Should Be…</item>
+        <item>What did you say? I can\'t hear you!</item>
+        <item>How about that ASMR, huh? Pretty soothing, don\'t you think?</item>
+        <item>Let\'s ROCK</item>
+    </string-array>
+</resources>
