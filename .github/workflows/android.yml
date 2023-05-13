@@ -122,203 +122,78 @@ jobs:
           asset_path: ${{ env.APK_FILE_X86 }}
           asset_content_type: application/zip
 
-    #            ## APKs
-    #            - [WishMeSilence-arm64-v8a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-arm64-v8a)
-    #            - [WishMeSilence-armeabi-v7a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-armeabi-v7a)
-    #            - [WishMeSilence-x64](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x64)
-    #            - [WishMeSilence-x86](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x86)
+    upload:
+      name: Upload Release
+      runs-on: ubuntu-latest
+      needs:
+        - build
+        - telegram-bot-api
+      steps:
+        - name: Download Artifacts
+          uses: actions/download-artifact@v2
+          with:
+            path: artifacts
+        - name: Download Telegram Bot API Binary
+          uses: actions/download-artifact@master
+          with:
+            name: telegram-bot-api-binary
+            path: .
 
-    #      - name: Publish Release
-    #        uses: ncipollo/release-action@v1
-    #        with:
-    #          token: ${{ secrets.GH_TOKEN }}
-    #          tag_name: v${{ github.run_number }}
-    #          release_name: Release v${{ github.run_number }}
-    #          body: |
-    #            ${{ github.event.pull_request.body }}
-    #            ${{ steps.show_pr_commits.outputs.commits }}
-    #          artifacts: ${{ github.artifacts }}
+        - name: find apk
+          run: |
+            mkdir apks
+            find artifacts -name "*.apk" -exec cp {} apks \;
+            echo "APK_FILE_UPLOAD=$(find apks -name '*arm64*.apk')" >> $GITHUB_ENV
+        - name: Get Apk Info
+          id: apk
+          uses: JantHsueh/get-apk-info-action@master
+          with:
+            apkPath: ${{ env.APK_FILE_UPLOAD }}
 
+        - name: Release
+          run: |
+            chmod +x telegram-bot-api-binary
+            ./telegram-bot-api-binary --api-id=21724 --api-hash=3e0cb5efcd52300aec5994fdfc5bdc16 --local 2>&1 > /dev/null &
+            curl https://gist.githubusercontent.com/Steve-Mr/c1576c67c010100c961209c70c294196/raw/ea67de0943128b3d59ff1f6af5c85d7d9d7f5e0d/uploadCI.py -o uploadCI.py
+            python uploadCI.py
+          env:
+            TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+            VERSION_CODE: ${{steps.apk.outputs.versionCode}}
+            VERSION_NAME: ${{steps.apk.outputs.versionNum}}
+            COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
-
-    #          echo "::set-env name=APK_PATH::$(find app/build/outputs/apk/ -name '*.apk' -type f)"
-    #
-    #  release:
-    #    runs-on: ubuntu-latest
-    #    needs: build
-    #    env:
-    #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #    steps:
-    #      # create release
-    #      - name: Create Release
-    #        id: create_release
-    #        uses: actions/create-release@v1
-    #        with:
-    #          tag_name:  ${{ github.ref }}
-    #          release_name: Release  ${{ github.ref }}
-    #          body: |
-    #            This is the first release of the app.
-    #
-    #      # upload apk files
-    #      - name: Upload APK
-    #        id: upload-release-asset
-    #        uses: actions/upload-release-asset@v1
-    #        with:
-    #          upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #          asset_path: ${{ env.APK_PATH }}
-    #          asset_name: my-app.apk
-    #          asset_content_type: application/vnd.android.package-archive
-
-    #          echo "APK_FILE=$(find app/build/outputs/apk -name '*arm64*.apk')" >> $GITHUB_ENV
-    #          echo "APK_FILE_ARMV7=$(find app/build/outputs/apk -name '*arm32*.apk')" >> $GITHUB_ENV
-    #          echo "APK_FILE_X86=$(find app/build/outputs/apk -name '*x86.apk')" >> $GITHUB_ENV
-    #          echo "APK_FILE_X64=$(find app/build/outputs/apk -name '*x86_64*.apk')" >> $GITHUB_ENV
-    #
-    #          - uses: actions/upload-artifact@v2
-    #            name: Upload apk (arm64-v8a)
-    #            with:
-    #              name: WishMeSilence-arm64-v8a
-    #              path: ${{ env.APK_FILE }}
-    #          - uses: actions/upload-artifact@v2
-    #            name: Upload apk (armeabi-v7a)
-    #            with:
-    #              name: WishMeSilence-armeabi-v7a
-    #              path: ${{ env.APK_FILE_ARMV7 }}
-    #          - uses: actions/upload-artifact@v2
-    #            name: Upload apk (x86_64)
-    #            with:
-    #              name: WishMeSilence-x86_64
-    #              path: ${{ env.APK_FILE_X64 }}
-    #          - uses: actions/upload-artifact@v2
-    #            name: Upload apk (x86)
-    #            with:
-    #              name: WishMeSilence-x86
-    #              path: ${{ env.APK_FILE_X86 }}
-    #          - name: Upload mapping
-    #            uses: actions/upload-artifact@v3
-    #            with:
-    #              name: mapping
-    #              path: app/build/outputs/mapping
-    #      - name: Create Release
-    #        id: create_release
-    #        uses: actions/create-release@v1
-    #        env:
-    #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #        with:
-    #          tag_name: ${{ github.ref }}
-    #          release_name: Release ${{ github.ref }}
-    #          body:
-    #          draft: false
-    #          prerelease: false
-
-    #      - name: Publish Release
-    #        if: github.event.action == 'created'
-    #        run: |
-    #          release_name=$(echo "${{ github.event.pull_request.title }}" | sed 's/.*#//')
-    #          release_version=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c 1-7)
-    #          echo "Release name: $release_name"
-    #          echo "Release version: $release_version"
-    #          uses: actions/create-release@v1
-    #            with:
-    #              tag_name: $release_version
-    #              release_name: $release_name
-    #              body: "This release contains the following changes:"
-    #              artifacts: ${{ github.artifacts }}
-    #  release:
-    #    name: Release APK
-    #    needs: build
-    #    runs-on: ubuntu-latest
-    #    steps:
-    #      - name: Download APK from build
-    #        uses: actions/download-artifact@v1
-    #        with:
-    #          name: WishMeSilence
-    #      - name: Create Release
-    #        id: create_release
-    #        uses: softprops/action-gh-release@v1
-    #        env:
-    #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #        with:
-    #          tag_name: v${{ github.event.inputs.version }}
-    #          name: Release v${{ github.event.inputs.version }}
-    #          draft: false
-    #          prerelease: false
-    #          files: WishMeSilence/WishMeSilence_*.apk
-
-
-#    upload:
-#      name: Upload Release
-#      if: ${{ github.event_name != 'pull_request' && success() && github.ref == 'refs/heads/master' }}
-#      runs-on: ubuntu-latest
-#      needs:
-#        - build
-#        - telegram-bot-api
-#      steps:
-#        - name: Download Artifacts
-#          uses: actions/download-artifact@v2
-#          with:
-#            path: artifacts
-#        - name: Download Telegram Bot API Binary
-#          uses: actions/download-artifact@master
-#          with:
-#            name: telegram-bot-api-binary
-#            path: .
-#
-#        - name: find apk
-#          run: |
-#            mkdir apks
-#            find artifacts -name "*.apk" -exec cp {} apks \;
-#            echo "APK_FILE_UPLOAD=$(find apks -name '*arm64*.apk')" >> $GITHUB_ENV
-#        - name: Get Apk Info
-#          id: apk
-#          uses: JantHsueh/get-apk-info-action@master
-#          with:
-#            apkPath: ${{ env.APK_FILE_UPLOAD }}
-#
-#        - name: Release
-#          run: |
-#            chmod +x telegram-bot-api-binary
-#            ./telegram-bot-api-binary --api-id=21724 --api-hash=3e0cb5efcd52300aec5994fdfc5bdc16 --local 2>&1 > /dev/null &
-#            curl https://raw.githubusercontent.com/qwq233/qwq233/master/uploadCI.py -o uploadCI.py
-#            python uploadCI.py
-#          env:
-#            TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-#            VERSION_CODE: ${{steps.apk.outputs.versionCode}}
-#            VERSION_NAME: ${{steps.apk.outputs.versionNum}}
-#            COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-#
-#    telegram-bot-api:
-#      name: Telegram Bot API
-#      runs-on: ubuntu-latest
-#      steps:
-#        - name: Checkout
-#          uses: actions/checkout@v2
-#        - name: Clone Telegram Bot API
-#          run: |
-#            git clone --recursive https://github.com/tdlib/telegram-bot-api.git
-#            git status telegram-bot-api >> telegram-bot-api-status
-#        - name: Cache Bot API Binary
-#          id: cache-bot-api
-#          uses: actions/cache@v2
-#          with:
-#            path: telegram-bot-api-binary
-#            key: CI-telegram-bot-api-${{ hashFiles('telegram-bot-api-status') }}
-#        - name: Compile Telegram Bot API
-#          if: steps.cache-bot-api.outputs.cache-hit != 'true'
-#          run: |
-#            sudo apt-get update
-#            sudo apt-get install make git zlib1g-dev libssl-dev gperf cmake g++
-#            cd telegram-bot-api
-#            rm -rf build
-#            mkdir build
-#            cd build
-#            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=.. ..
-#            cmake --build . --target install -j$(nproc)
-#            cd ../..
-#            ls -l telegram-bot-api/bin/telegram-bot-api*
-#            cp telegram-bot-api/bin/telegram-bot-api telegram-bot-api-binary
-#        - name: Upload Binary
-#          uses: actions/upload-artifact@master
-#          with:
-#            name: telegram-bot-api-binary
-#            path: telegram-bot-api-binary
+    telegram-bot-api:
+      name: Telegram Bot API
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+        - name: Clone Telegram Bot API
+          run: |
+            git clone --recursive https://github.com/tdlib/telegram-bot-api.git
+            git status telegram-bot-api >> telegram-bot-api-status
+        - name: Cache Bot API Binary
+          id: cache-bot-api
+          uses: actions/cache@v2
+          with:
+            path: telegram-bot-api-binary
+            key: CI-telegram-bot-api-${{ hashFiles('telegram-bot-api-status') }}
+        - name: Compile Telegram Bot API
+          if: steps.cache-bot-api.outputs.cache-hit != 'true'
+          run: |
+            sudo apt-get update
+            sudo apt-get install make git zlib1g-dev libssl-dev gperf cmake g++
+            cd telegram-bot-api
+            rm -rf build
+            mkdir build
+            cd build
+            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=.. ..
+            cmake --build . --target install -j$(nproc)
+            cd ../..
+            ls -l telegram-bot-api/bin/telegram-bot-api*
+            cp telegram-bot-api/bin/telegram-bot-api telegram-bot-api-binary
+        - name: Upload Binary
+          uses: actions/upload-artifact@master
+          with:
+            name: telegram-bot-api-binary
+            path: telegram-bot-api-binary
