@@ -9,11 +9,11 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 
 android {
-    namespace 'com.maary.wishmesilence'
+    namespace 'com.maary.liveinpeace'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.maary.wishmesilence"
+        applicationId "com.maary.liveinpeace"
         minSdk 31
         targetSdk 33
         versionCode 1
@@ -62,9 +62,9 @@ android {
         variant.outputs.all { output ->
             // ...
             def abi = output.getFilter(com.android.build.OutputFile.ABI)
-            def apkName = "WishMeSilence-${abi}.apk"
+            def apkName = "LiveInPeace-${abi}.apk"
             if (abi.contains("x86_64")) {
-                apkName = "WishMeSilence-x64.apk"
+                apkName = "LiveInPeace-x64.apk"
             }
             outputFileName = apkName
         }
