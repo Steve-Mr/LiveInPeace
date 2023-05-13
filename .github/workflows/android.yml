@@ -81,6 +81,13 @@ jobs:
             ## Changes
             ${{ github.event.pull_request.body }}
             ${{ steps.show_pr_commits.outputs.commits }}
+            ## APKs
+            - [WishMeSilence-arm64-v8a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-arm64-v8a)
+            - [WishMeSilence-armeabi-v7a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-armeabi-v7a)
+            - [WishMeSilence-x64](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x64)
+            - [WishMeSilence-x86](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x86)
+
+      
 
       - name: Upload APK
         uses: actions/upload-artifact@v2
