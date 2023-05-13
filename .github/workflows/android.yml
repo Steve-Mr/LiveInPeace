@@ -69,53 +69,38 @@ jobs:
           name: WishMeSilence-x86
           path: ${{ env.APK_FILE_X86 }}
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
-          body: |
-            ## Changes
-            ${{ github.event.pull_request.body }}
-            ${{ steps.show_pr_commits.outputs.commits }}
-            ## APKs
-            - [WishMeSilence-arm64-v8a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-arm64-v8a)
-            - [WishMeSilence-armeabi-v7a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-armeabi-v7a)
-            - [WishMeSilence-x64](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x64)
-            - [WishMeSilence-x86](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x86)
+#      - name: Create Release
+#        id: create_release
+#        uses: actions/create-release@v1.0.0
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#        with:
+#          tag_name: v${{ github.run_number }}
+#          release_name: Release v${{ github.run_number }}
+#          body: |
+#            ## Changes
+#            ${{ github.event.pull_request.body }}
+#            ${{ steps.show_pr_commits.outputs.commits }}
+#            ## APKs
+#            - [WishMeSilence-arm64-v8a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-arm64-v8a)
+#            - [WishMeSilence-armeabi-v7a](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-armeabi-v7a)
+#            - [WishMeSilence-x64](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x64)
+#            - [WishMeSilence-x86](${{ steps.upload_apk.outputs.artifacts_url }}/WishMeSilence-x86)
 
-      
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v2
-        if: success()
-        with:
-          name: ${{ github.event.repository.name }}_${{ github.run_number }}_arm64-v8a.apk
-          path: ${{ env.APK_FILE }}
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v2
-        if: success()
-        with:
-          name: ${{ github.event.repository.name }}_${{ github.run_number }}_armeabi-v7a.apk
-          path: ${{ env.APK_FILE_ARMV7 }}
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v2
-        if: success()
-        with:
-          name: ${{ github.event.repository.name }}_${{ github.run_number }}_x86_64.apk
-          path: ${{ env.APK_FILE_X86 }}
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v2
-        if: success()
-        with:
-          name: ${{ github.event.repository.name }}_${{ github.run_number }}_x86.apk
-          path: ${{ env.APK_FILE_X64 }}
+      - name: Publish Release
+        if: github.event.action == 'created'
+        run: |
+          release_name=Release v${{ github.run_number }}
+          release_version=v${{ github.run_number }}
+          echo "Release name: $release_name"
+          echo "Release version: $release_version"
+          uses: actions/create-release@v1
+            with:
+              token: ${{ secrets.GH_TOKEN }}
+              tag_name: $release_version
+              release_name: $release_name
+              body: "This release contains the following changes:"
+              artifacts: ${{ github.artifacts }}
 
 
 #          echo "::set-env name=APK_PATH::$(find app/build/outputs/apk/ -name '*.apk' -type f)"
