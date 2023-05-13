@@ -144,6 +144,7 @@ jobs:
           mkdir apks
           find artifacts -name "*.apk" -exec cp {} apks \;
           echo "APK_FILE_UPLOAD=$(find apks -name '*arm64*.apk')" >> $GITHUB_ENV
+          ls ./apks
       - name: Get Apk Info
         id: apk
         uses: JantHsueh/get-apk-info-action@master
@@ -155,7 +156,8 @@ jobs:
           chmod +x telegram-bot-api-binary
           ./telegram-bot-api-binary --api-id=21724 --api-hash=3e0cb5efcd52300aec5994fdfc5bdc16 --local 2>&1 > /dev/null &
           curl https://gist.githubusercontent.com/Steve-Mr/c1576c67c010100c961209c70c294196/raw/ea67de0943128b3d59ff1f6af5c85d7d9d7f5e0d/uploadCI.py -o uploadCI.py
-          python uploadCI.py
+          python uploadCI.py > upload.txt
+          cat upload.txt
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           VERSION_CODE: ${{steps.apk.outputs.versionCode}}
