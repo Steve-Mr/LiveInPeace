@@ -145,6 +145,7 @@ jobs:
           find artifacts -name "*.apk" -exec cp {} apks \;
           echo "APK_FILE_UPLOAD=$(find apks -name '*arm64*.apk')" >> $GITHUB_ENV
           ls ./apks
+
       - name: Get Apk Info
         id: apk
         uses: JantHsueh/get-apk-info-action@master
