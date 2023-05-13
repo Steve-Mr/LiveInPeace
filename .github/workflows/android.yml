@@ -42,18 +42,38 @@ jobs:
       - name: Build with Gradle
         run: |
           ./gradlew :app:assembleRelease
-
-          # Get APK file names and paths
-          APK_FILE_ARM64=$(find app/build/outputs/apk/release -name '*arm64*.apk' | head -n 1)
-          APK_FILE_ARMV7=$(find app/build/outputs/apk/release -name '*arm32*.apk' | head -n 1)
-          APK_FILE_X86=$(find app/build/outputs/apk/release -name '*x86*.apk' | head -n 1)
-          APK_FILE_X86_64=$(find app/build/outputs/apk/release -name '*x86_64*.apk' | head -n 1)
+          
+          echo "APK_FILE=$(find app/build/outputs/apk -name '*arm64*.apk')" >> $GITHUB_ENV
+          echo "APK_FILE_ARMV7=$(find app/build/outputs/apk -name '*arm32*.apk')" >> $GITHUB_ENV
+          echo "APK_FILE_X86=$(find app/build/outputs/apk -name '*x86.apk')" >> $GITHUB_ENV
+          echo "APK_FILE_X64=$(find app/build/outputs/apk -name '*x86_64*.apk')" >> $GITHUB_ENV
 
           # Set output variables for APK files
           echo "::set-output name=apk_file_arm64::$APK_FILE_ARM64"
           echo "::set-output name=apk_file_armv7::$APK_FILE_ARMV7"
           echo "::set-output name=apk_file_x86::$APK_FILE_X86"
           echo "::set-output name=apk_file_x86_64::$APK_FILE_X86_64"
+
+      - uses: actions/upload-artifact@v2
+        name: Upload apk (arm64-v8a)
+        with:
+          name: WishMeSilence-arm64-v8a
+          path: ${{ env.APK_FILE }}
+      - uses: actions/upload-artifact@v2
+        name: Upload apk (armeabi-v7a)
+        with:
+          name: WishMeSilence-armeabi-v7a
+          path: ${{ env.APK_FILE_ARMV7 }}
+      - uses: actions/upload-artifact@v2
+        name: Upload apk (x86_64)
+        with:
+          name: WishMeSilence-x86_64
+          path: ${{ env.APK_FILE_X64 }}
+      - uses: actions/upload-artifact@v2
+        name: Upload apk (x86)
+        with:
+          name: WishMeSilence-x86
+          path: ${{ env.APK_FILE_X86 }}
 
       - name: Create Release
         id: create_release
@@ -73,28 +93,28 @@ jobs:
         if: success()
         with:
           name: ${{ github.event.repository.name }}_${{ github.run_number }}_arm64-v8a.apk
-          path: ${{ steps.build.outputs.apk_file_arm64 }}
+          path: ${{ env.APK_FILE }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v2
         if: success()
         with:
           name: ${{ github.event.repository.name }}_${{ github.run_number }}_armeabi-v7a.apk
-          path: ${{ steps.build.outputs.apk_file_armv7 }}
+          path: ${{ env.APK_FILE_ARMV7 }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v2
         if: success()
         with:
           name: ${{ github.event.repository.name }}_${{ github.run_number }}_x86_64.apk
-          path: ${{ steps.build.outputs.apk_file_x86_64 }}
+          path: ${{ env.APK_FILE_X86 }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v2
         if: success()
         with:
           name: ${{ github.event.repository.name }}_${{ github.run_number }}_x86.apk
-          path: ${{ steps.build.outputs.apk_file_x86 }}
+          path: ${{ env.APK_FILE_X64 }}
 
 
 #          echo "::set-env name=APK_PATH::$(find app/build/outputs/apk/ -name '*.apk' -type f)"
