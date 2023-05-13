@@ -24,15 +24,18 @@ jobs:
         run: |
           echo "${{ secrets.KEY_PROPERTIES }}" | base64 --decode > ./key.properties
           ls ./
+          ls -l key.properties
 
       - name: Storing keystore
         run: |
           echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./app/key.keystore
           ls ./app
+          ls -l ./app/key.keystore
           
       - name: Storing keystore
         run: |
           echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./key.keystore
+          ls -l ./key.keystore
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
