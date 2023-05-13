@@ -19,10 +19,10 @@ jobs:
           cache: gradle
 
       - name: Storing key.properties
-        run: echo "${{ secrets.KEY_PROPERTIES }}" | base64 --decode > key.properties
+        run: echo "${{ secrets.KEY_PROPERTIES }}" | base64 --decode > ./key.properties
 
       - name: Storing keystore
-        run: echo "${{ secrets.KEYSTORE }}" | base64 --decode > app/key.keystore
+        run: echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./app/key.keystore
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
