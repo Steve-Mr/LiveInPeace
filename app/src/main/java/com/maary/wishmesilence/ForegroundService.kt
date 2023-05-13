@@ -1,8 +1,8 @@
 package com.maary.wishmesilence
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -49,8 +49,9 @@ class ForegroundService: Service() {
         }
     }
 
-    private val volumeChangeReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
+    private val volumeChangeReceiver = object : VolumeReceiver() {
+        @SuppressLint("MissingPermission")
+        override fun updateNotification(context: Context) {
             with(NotificationManagerCompat.from(applicationContext)){
                 notify(1, createNotification(applicationContext))
             }
@@ -63,6 +64,7 @@ class ForegroundService: Service() {
         // 注册音量变化广播接收器
         val filter = IntentFilter().apply {
             addAction("android.media.VOLUME_CHANGED_ACTION")
+            addAction("android.media.AUDIO_BECOMING_NOISY")
         }
         registerReceiver(volumeChangeReceiver, filter)
     }
