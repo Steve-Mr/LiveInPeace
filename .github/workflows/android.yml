@@ -82,20 +82,10 @@ jobs:
             ${{ github.event.pull_request.body }}
             ${{ steps.show_pr_commits.outputs.commits }}
 
-#      - name: upload v8a artifact
-#        uses: actions/upload-release-asset@v1
-#        env:
-#          GITHUB_TOKEN: ${{ github.token }}
-#        with:
-#          upload_url: ${{ steps.create_release.outputs.upload_url }}
-#          asset_path: ./bin/azblogfilter.linux-amd64.tar.gz
-#          asset_name: azblogfilter.linux-amd64.tar.gz
-#          asset_content_type: application/gzip
-
       - uses: actions/upload-release-asset@v1
         name: Upload apk (arm64-v8a)
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_name: WishMeSilence-arm64-v8a
@@ -105,7 +95,7 @@ jobs:
       - uses: actions/upload-release-asset@v1
         name: Upload apk (armeabi-v7a)
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_name: WishMeSilence-armeabi-v7a
@@ -115,7 +105,7 @@ jobs:
       - uses: actions/upload-release-asset@v1
         name: Upload apk (x86_64)
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_name: WishMeSilence-x86_64
@@ -125,7 +115,7 @@ jobs:
       - uses: actions/upload-release-asset@v1
         name: Upload apk (x86)
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_name: WishMeSilence-x86
