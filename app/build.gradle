@@ -17,7 +17,7 @@ android {
         minSdk 31
         targetSdk 33
         versionCode 1
-        versionName "1.0"
+        versionName "0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     splits {
@@ -62,7 +62,7 @@ android {
         variant.outputs.all { output ->
             // ...
             def abi = output.getFilter(com.android.build.OutputFile.ABI)
-            def apkName = "WishMySilence-${variant.versionName}-${abi}.apk"
+            def apkName = "WishMySilence-${abi}-${variant.versionName}.apk"
             outputFileName = apkName
         }
     }
