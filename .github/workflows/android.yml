@@ -1,6 +1,8 @@
 name: Android CI
 
 on:
+  commit:
+    branches: [ "dev" ]
   pull_request:
     branches: [ "main" ]
 
@@ -22,7 +24,10 @@ jobs:
         run: echo "${{ secrets.KEY_PROPERTIES }}" | base64 --decode > ./key.properties
 
       - name: Storing keystore
-        run: echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./app/key.keystore
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./app/key.keystore
+          ls ./
+          ls ./app
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
