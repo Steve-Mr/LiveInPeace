@@ -49,22 +49,22 @@ jobs:
       - uses: actions/upload-artifact@v2
         name: Upload apk (arm64-v8a)
         with:
-          name: WishMeSilence-arm64-v8a
+          name: LiveInPeace-arm64-v8a
           path: ${{ env.APK_FILE }}
       - uses: actions/upload-artifact@v2
         name: Upload apk (armeabi-v7a)
         with:
-          name: WishMeSilence-armeabi-v7a
+          name: LiveInPeace-armeabi-v7a
           path: ${{ env.APK_FILE_ARMV7 }}
       - uses: actions/upload-artifact@v2
         name: Upload apk (x86_64)
         with:
-          name: WishMeSilence-x86_64
+          name: LiveInPeace-x86_64
           path: ${{ env.APK_FILE_X64 }}
       - uses: actions/upload-artifact@v2
         name: Upload apk (x86)
         with:
-          name: WishMeSilence-x86
+          name: LiveInPeace-x86
           path: ${{ env.APK_FILE_X86 }}
 
       - name: Create Release
@@ -86,7 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: WishMeSilence-arm64-v8a
+          asset_name: LiveInPeace-arm64-v8a
           asset_path: ${{ env.APK_FILE }}
           asset_content_type: application/zip
 
@@ -96,7 +96,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: WishMeSilence-armeabi-v7a
+          asset_name: LiveInPeace-armeabi-v7a
           asset_path: ${{ env.APK_FILE_ARMV7 }}
           asset_content_type: application/zip
 
@@ -106,7 +106,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: WishMeSilence-x86_64
+          asset_name: LiveInPeace-x86_64
           asset_path: ${{ env.APK_FILE_X64 }}
           asset_content_type: application/zip
 
@@ -116,7 +116,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: WishMeSilence-x86
+          asset_name: LiveInPeace-x86
           asset_path: ${{ env.APK_FILE_X86 }}
           asset_content_type: application/zip
 
