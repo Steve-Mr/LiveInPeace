@@ -1,7 +1,7 @@
 name: Android CI
 
 on:
-  commit:
+  push:
     branches: [ "dev" ]
   pull_request:
     branches: [ "main" ]
