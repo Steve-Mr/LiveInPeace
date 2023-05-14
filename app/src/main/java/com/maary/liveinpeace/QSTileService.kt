@@ -22,6 +22,11 @@ class QSTileService: TileService() {
                 resources.getString(R.string.default_channel),
                 resources.getString(R.string.default_channel_description)
             )
+            createNotificationChannel(
+                NotificationManager.IMPORTANCE_MIN,
+                resources.getString(R.string.channel_settings),
+                resources.getString(R.string.settings_channel_description)
+            )
 
             applicationContext.startForegroundService(intent)
             tile.state = Tile.STATE_ACTIVE

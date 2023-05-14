@@ -45,6 +45,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".SettingsReceiver"
+            android:exported="true"
+            android:permission="TODO">
+            <intent-filter>
+                <action android:name="com.maary.liveinpeace.SettingsReceiver"/>
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
