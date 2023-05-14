@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
@@ -36,6 +37,8 @@ class ForegroundService: Service() {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        Log.v("MUTE_", currentVolume.toString())
+        Log.v("MUTE_", maxVolume.toString())
         return 100 * currentVolume / maxVolume
     }
 
@@ -64,7 +67,8 @@ class ForegroundService: Service() {
         // 注册音量变化广播接收器
         val filter = IntentFilter().apply {
             addAction("android.media.VOLUME_CHANGED_ACTION")
-            addAction("android.media.AUDIO_BECOMING_NOISY")
+            addAction("android.intent.action.HEADSET_PLUG")
+            addAction( "android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED" )
         }
         registerReceiver(volumeChangeReceiver, filter)
     }
