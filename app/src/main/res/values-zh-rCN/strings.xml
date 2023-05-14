@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Live in Peace</string>
-    <string name="volume_comment_0">嘘……</string>
-    <string name="volume_comment_1">完美的平衡，万物本该如此……</string>
-    <string name="volume_comment_2">你说啥？我听不见</string>
-    <string name="volume_comment_3">所以 ASMR 好听吗</string>
-    <string name="volume_comment_4">ROOOOOCK!</string>
     <string name="current_volume_percent">当前电量百分比为 %2$d%% \n%1$s</string>
     <string name="to_be_or_not">静音还是不静音</string>
     <string name="qstile_active">小心哦</string>
     <string name="qstile_inactive">随便吧</string>
+    <string name="default_channel">前台服务</string>
     <string name="default_channel_description">我在看着你 的音量。</string>
+    <string name="icon_type_img">图形图标</string>
+    <string name="icon_type_num">数字图标</string>
+    <string name="channel_settings">设置</string>
+    <string name="LIP_settings">设置</string>
+    <string name="settings">设置</string>
+    <string name="settings_channel_description">用于设置的通知渠道</string>
+    <string-array name="array_volume_comment">
+        <item>嘘……</item>
+        <item>完美的平衡，万物本该如此……</item>
+        <item>你说啥？我听不见</item>
+        <item>所以 ASMR 好听吗</item>
+        <item>ROOOOOCK!</item>
+    </string-array>
+    <string name="cancel">取消</string>
 </resources>
