@@ -12,8 +12,6 @@
 /captures
 .externalNativeBuild
 .cxx
-local.properties
-/gradle
 app/*.keystore
 app/release
 app/src/androidTest
