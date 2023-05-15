@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+<!--    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>-->
 
     <application
         android:allowBackup="true"
@@ -20,9 +20,6 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.media.VOLUME_CHANGED_ACTION"/>
-<!--                <action android:name="android.media.AUDIO_BECOMING_NOISY"/>-->
-                <action android:name="android.intent.action.HEADSET_PLUG"/>
-                <action android:name="android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED"/>
             </intent-filter>
         </service>
 
