@@ -21,6 +21,14 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_FOREGROUND
+import com.maary.liveinpeace.Constants.Companion.MODE_IMG
+import com.maary.liveinpeace.Constants.Companion.MODE_NUM
+import com.maary.liveinpeace.Constants.Companion.PREF_ICON
+import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import kotlin.properties.Delegates
 
 class ForegroundService: Service() {
@@ -71,7 +79,7 @@ class ForegroundService: Service() {
         @SuppressLint("MissingPermission")
         override fun updateNotification(context: Context) {
             with(NotificationManagerCompat.from(applicationContext)){
-                notify(Constants.ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+                notify(ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
             }
         }
     }
@@ -81,7 +89,7 @@ class ForegroundService: Service() {
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
             // Handle newly added audio devices
             with(NotificationManagerCompat.from(applicationContext)){
-                notify(Constants.ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+                notify(ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
             }
         }
 
@@ -89,7 +97,7 @@ class ForegroundService: Service() {
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
             // Handle removed audio devices
             with(NotificationManagerCompat.from(applicationContext)){
-                notify(Constants.ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+                notify(ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
             }
         }
     }
@@ -97,7 +105,7 @@ class ForegroundService: Service() {
     override fun onCreate() {
         super.onCreate()
 
-        iconMode = getSharedPreferences(Constants.SHARED_PREF, Context.MODE_PRIVATE).getInt(Constants.PREF_ICON, Constants.MODE_IMG)
+        iconMode = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE).getInt(PREF_ICON, MODE_IMG)
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioManager.registerAudioDeviceCallback(audioDeviceCallback, null)
@@ -119,7 +127,7 @@ class ForegroundService: Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(Constants.ID_NOTIFICATION_FOREGROUND, createNotification(context = applicationContext))
+        startForeground(ID_NOTIFICATION_FOREGROUND, createNotification(context = applicationContext))
         isForegroundServiceRunning = true
 
         // 返回 START_STICKY，以确保 Service 在被终止后能够自动重启
@@ -130,6 +138,7 @@ class ForegroundService: Service() {
         TODO("Not yet implemented")
     }
 
+    @SuppressLint("LaunchActivityFromNotification")
     private fun createNotification(context: Context): Notification {
         val currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
@@ -137,7 +146,7 @@ class ForegroundService: Service() {
         val nIcon = generateNotificationIcon(context, iconMode)
 
         val settingsIntent = Intent(this, SettingsReceiver::class.java).apply {
-            action = Constants.ACTION_NAME_SETTINGS
+            action = ACTION_NAME_SETTINGS
         }
         val snoozePendingIntent: PendingIntent =
             PendingIntent.getBroadcast(this, 0, settingsIntent, PendingIntent.FLAG_IMMUTABLE)
@@ -148,8 +157,12 @@ class ForegroundService: Service() {
             snoozePendingIntent
         ).build()
 
+        val muteMediaIntent = Intent(context, MuteMediaReceiver::class.java)
+        muteMediaIntent.action = BROADCAST_ACTION_MUTE
+        val pendingMuteIntent = PendingIntent.getBroadcast(context, 0, muteMediaIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
         // 将 Service 设置为前台服务，并创建一个通知
-        return NotificationCompat.Builder(this, getString(R.string.default_channel))
+        return NotificationCompat.Builder(this, CHANNEL_ID_DEFAULT)
             .setContentTitle(getString(R.string.to_be_or_not))
             .setOnlyAlertOnce(true)
             .setContentText(String.format(
@@ -157,6 +170,7 @@ class ForegroundService: Service() {
                 volumeComment[currentVolumeLevel],
                 currentVolume))
             .setSmallIcon(nIcon)
+            .setContentIntent(pendingMuteIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
             .build()
@@ -165,7 +179,7 @@ class ForegroundService: Service() {
     private fun generateNotificationIcon(context: Context, iconMode: Int): IconCompat {
         val currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
-        if (iconMode == Constants.MODE_NUM){
+        if (iconMode == MODE_NUM){
             var count = currentVolume
             var isCountLow = false
             var isCountHigh = false
