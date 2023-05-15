@@ -152,6 +152,7 @@ class ForegroundService: Service() {
                 color = Color.WHITE
                 textSize = 100f
                 typeface = context.resources.getFont(R.font.ndot_45)
+                isFakeBoldText = true
                 isAntiAlias = true
             }
 
