@@ -4,7 +4,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 
     <application
         android:allowBackup="true"
@@ -20,9 +19,6 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.media.VOLUME_CHANGED_ACTION"/>
-<!--                <action android:name="android.media.AUDIO_BECOMING_NOISY"/>-->
-                <action android:name="android.intent.action.HEADSET_PLUG"/>
-                <action android:name="android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED"/>
             </intent-filter>
         </service>
 
@@ -36,7 +32,7 @@
         </service>
 
         <receiver android:name=".BootCompleteReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.BOOT" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -46,8 +42,7 @@
         </receiver>
 
         <receiver android:name=".SettingsReceiver"
-            android:exported="true"
-            android:permission="TODO">
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.maary.liveinpeace.SettingsReceiver"/>
             </intent-filter>

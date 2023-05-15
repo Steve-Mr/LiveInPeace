@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Wish Me Silence</string>
+    <string name="app_name">Live In Peace</string>
     <string name="to_be_or_not">To Mute, or Not to Mute</string>
     <string name="current_volume_percent">Current volume percentage is %2$d%% \n%1$s</string>
     <string name="qstile_active">Be Aware</string>

@@ -13,6 +13,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.IBinder
 import android.util.Log
@@ -34,6 +36,8 @@ class ForegroundService: Service() {
     private var iconMode by Delegates.notNull<Int>()
 
     private lateinit var volumeComment: Array<String>
+
+    private lateinit var audioManager: AudioManager
 
     companion object {
         private var isForegroundServiceRunning = false
@@ -72,16 +76,35 @@ class ForegroundService: Service() {
         }
     }
 
+    private val audioDeviceCallback = object : AudioDeviceCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
+            // Handle newly added audio devices
+            with(NotificationManagerCompat.from(applicationContext)){
+                notify(Constants.ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
+            // Handle removed audio devices
+            with(NotificationManagerCompat.from(applicationContext)){
+                notify(Constants.ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
 
         iconMode = getSharedPreferences(Constants.SHARED_PREF, Context.MODE_PRIVATE).getInt(Constants.PREF_ICON, Constants.MODE_IMG)
 
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager.registerAudioDeviceCallback(audioDeviceCallback, null)
+
         // 注册音量变化广播接收器
         val filter = IntentFilter().apply {
             addAction("android.media.VOLUME_CHANGED_ACTION")
-            addAction("android.intent.action.HEADSET_PLUG")
-            addAction( "android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED" )
         }
         registerReceiver(volumeChangeReceiver, filter)
     }
@@ -91,6 +114,7 @@ class ForegroundService: Service() {
 
         // 取消注册音量变化广播接收器
         unregisterReceiver(volumeChangeReceiver)
+        audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         isForegroundServiceRunning = false
     }
 
@@ -152,6 +176,7 @@ class ForegroundService: Service() {
                 color = Color.WHITE
                 textSize = 100f
                 typeface = context.resources.getFont(R.font.ndot_45)
+                isFakeBoldText = true
                 isAntiAlias = true
             }
 
