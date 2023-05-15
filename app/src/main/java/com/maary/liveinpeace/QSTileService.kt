@@ -14,6 +14,8 @@ import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
 
 class QSTileService: TileService() {
@@ -41,11 +43,13 @@ class QSTileService: TileService() {
         if (!ForegroundService.isForegroundServiceRunning()){
             createNotificationChannel(
                 NotificationManager.IMPORTANCE_MIN,
+                CHANNEL_ID_DEFAULT,
                 resources.getString(R.string.default_channel),
                 resources.getString(R.string.default_channel_description)
             )
             createNotificationChannel(
                 NotificationManager.IMPORTANCE_MIN,
+                CHANNEL_ID_SETTINGS,
                 resources.getString(R.string.channel_settings),
                 resources.getString(R.string.settings_channel_description)
             )
@@ -81,9 +85,9 @@ class QSTileService: TileService() {
         tile.updateTile()
     }
 
-    private fun createNotificationChannel(importance:Int ,name:String, descriptionText: String) {
+    private fun createNotificationChannel(importance:Int, id: String ,name:String, descriptionText: String) {
         //val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel(name, name, importance).apply {
+        val channel = NotificationChannel(id, name, importance).apply {
             description = descriptionText
         }
         // Register the channel with the system

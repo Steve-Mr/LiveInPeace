@@ -6,16 +6,26 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.maary.liveinpeace.Constants.Companion.ACTION_CANCEL
+import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SET_IMG
+import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SET_NUM
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.MODE_IMG
+import com.maary.liveinpeace.Constants.Companion.MODE_NUM
+import com.maary.liveinpeace.Constants.Companion.PREF_ICON
+import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 
 class SettingsReceiver: BroadcastReceiver() {
     override fun onReceive(p0: Context?, p1: Intent?) {
-        if (Constants.ACTION_NAME_SETTINGS == p1?.action){
+        if (ACTION_NAME_SETTINGS == p1?.action){
 
             val actionImgIcon = p0?.let {
                 generateAction(
                     it,
                     SettingsReceiver::class.java,
-                    Constants.ACTION_NAME_SET_IMG,
+                    ACTION_NAME_SET_IMG,
                     R.string.icon_type_img
                 )
             }
@@ -24,7 +34,7 @@ class SettingsReceiver: BroadcastReceiver() {
                 generateAction(
                     it,
                     SettingsReceiver::class.java,
-                    Constants.ACTION_NAME_SET_NUM,
+                    ACTION_NAME_SET_NUM,
                     R.string.icon_type_num
                 )
             }
@@ -33,7 +43,7 @@ class SettingsReceiver: BroadcastReceiver() {
                 generateAction(
                     it,
                     SettingsReceiver::class.java,
-                    Constants.ACTION_CANCEL,
+                    ACTION_CANCEL,
                     R.string.cancel
                 )
             }
@@ -46,49 +56,49 @@ class SettingsReceiver: BroadcastReceiver() {
             p0?.let { notify(it, actions) }
         }
 
-        if (Constants.ACTION_NAME_SET_IMG == p1?.action){
+        if (ACTION_NAME_SET_IMG == p1?.action){
             val sharedPreferences = p0?.getSharedPreferences(
-                Constants.SHARED_PREF,
+                SHARED_PREF,
                 Context.MODE_PRIVATE
             )
             if (sharedPreferences != null) {
                 with(sharedPreferences.edit()){
-                    putInt(Constants.PREF_ICON, Constants.MODE_IMG)
+                    putInt(PREF_ICON, MODE_IMG)
                     apply()
                     val notificationManager: NotificationManager =
                         p0.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     val foregroundServiceIntent = Intent(p0, ForegroundService::class.java)
                     p0.stopService(foregroundServiceIntent)
                     p0.startForegroundService(foregroundServiceIntent)
-                    notificationManager.cancel(Constants.ID_NOTIFICATION_SETTINGS)
+                    notificationManager.cancel(ID_NOTIFICATION_SETTINGS)
                 }
             }
         }
 
-        if (Constants.ACTION_NAME_SET_NUM == p1?.action){
+        if (ACTION_NAME_SET_NUM == p1?.action){
             val sharedPreferences = p0?.getSharedPreferences(
-                Constants.SHARED_PREF,
+                SHARED_PREF,
                 Context.MODE_PRIVATE
             )
             if (sharedPreferences != null) {
                 with(sharedPreferences.edit()){
-                    putInt(Constants.PREF_ICON, Constants.MODE_NUM)
+                    putInt(PREF_ICON, MODE_NUM)
                     apply()
                     val notificationManager: NotificationManager =
                         p0.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     val foregroundServiceIntent = Intent(p0, ForegroundService::class.java)
                     p0.stopService(foregroundServiceIntent)
                     p0.startForegroundService(foregroundServiceIntent)
-                    notificationManager.cancel(Constants.ID_NOTIFICATION_SETTINGS)
+                    notificationManager.cancel(ID_NOTIFICATION_SETTINGS)
 
                 }
             }
         }
 
-        if (Constants.ACTION_CANCEL == p1?.action){
+        if (ACTION_CANCEL == p1?.action){
             val notificationManager: NotificationManager =
                 p0?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.cancel(Constants.ID_NOTIFICATION_SETTINGS)
+            notificationManager.cancel(ID_NOTIFICATION_SETTINGS)
         }
 
     }
@@ -123,7 +133,7 @@ class SettingsReceiver: BroadcastReceiver() {
         val notificationSettings = context.let {
             NotificationCompat.Builder(
                 it,
-                context.resources?.getString(R.string.channel_settings)!!
+                CHANNEL_ID_SETTINGS
             )
                 .setOngoing(true)
                 .setSmallIcon(R.drawable.ic_baseline_settings_24)
