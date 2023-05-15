@@ -13,3 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+/gradle
+app/*.keystore
+app/release
+app/src/androidTest
+app/src/test
+key.properties
+.idea/
