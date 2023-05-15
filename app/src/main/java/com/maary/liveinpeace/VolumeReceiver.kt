@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothHeadset
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -13,27 +15,30 @@ abstract class VolumeReceiver : BroadcastReceiver() {
     private var lastUpdateTime: Long = 0
     private val handler = Handler(Looper.getMainLooper())
 
-    private var isHandlingDelayedEvent = false
-
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == "android.media.VOLUME_CHANGED_ACTION" ||
             intent.action.equals(Intent.ACTION_HEADSET_PLUG) ||
             intent.action.equals(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
         ) {
-
-            if (intent.action.equals(Intent.ACTION_HEADSET_PLUG)) {
-                Log.v("MUTE_", "HEADSET")
-            }
             if (intent.action.equals(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)) {
                 Log.v("MUTE_", "BLEHEADSET")
-                if (!isHandlingDelayedEvent) {
-                    isHandlingDelayedEvent = true
-                    handler.postDelayed({
-                        // 延迟 500ms 后执行此处代码
-                        isHandlingDelayedEvent = false
-                        // 处理触发事件的逻辑
-                        updateNotification(context)
-                    }, DEBOUNCE_TIME_MS.toLong())
+                val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, BluetoothHeadset.STATE_CONNECTED)
+                if (state == BluetoothHeadset.STATE_DISCONNECTED) {
+                    Log.v("MUTE_", "DISCONNECT BLEHEADSET")
+
+                    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    val deviceType = audioManager.communicationDevice?.type
+                    Log.v("MUTE_", deviceType.toString())
+                    if (deviceType == AudioDeviceInfo.TYPE_BLE_HEADSET ||
+                        deviceType == AudioDeviceInfo.TYPE_BLE_SPEAKER ||
+                        deviceType == AudioDeviceInfo.TYPE_BLE_BROADCAST ||
+                        deviceType == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                        deviceType == AudioDeviceInfo.TYPE_BLUETOOTH_SCO){
+                        Log.v("MUTE_", "DELAY")
+
+                        handler.postDelayed({ onReceive(context, intent) }, DEBOUNCE_TIME_MS.toLong())
+                    }
+
                 }
             }
             val now = System.currentTimeMillis()
