@@ -130,6 +130,7 @@ class ForegroundService: Service() {
         TODO("Not yet implemented")
     }
 
+    @SuppressLint("LaunchActivityFromNotification")
     private fun createNotification(context: Context): Notification {
         val currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
@@ -148,6 +149,10 @@ class ForegroundService: Service() {
             snoozePendingIntent
         ).build()
 
+        val muteMediaIntent = Intent(context, MuteMediaReceiver::class.java)
+        muteMediaIntent.action = Constants.BROADCAST_ACTION_MUTE
+        val pendingMuteIntent = PendingIntent.getBroadcast(context, 0, muteMediaIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
         // 将 Service 设置为前台服务，并创建一个通知
         return NotificationCompat.Builder(this, getString(R.string.default_channel))
             .setContentTitle(getString(R.string.to_be_or_not))
@@ -157,6 +162,7 @@ class ForegroundService: Service() {
                 volumeComment[currentVolumeLevel],
                 currentVolume))
             .setSmallIcon(nIcon)
+            .setContentIntent(pendingMuteIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
             .build()

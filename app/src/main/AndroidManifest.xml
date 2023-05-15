@@ -48,6 +48,13 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".MuteMediaReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.maary.liveinpeace.MUTE_MEDIA" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
