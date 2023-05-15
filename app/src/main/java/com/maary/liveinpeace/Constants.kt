@@ -13,5 +13,6 @@ class Constants {
         const val ACTION_NAME_SET_NUM = "com.maary.liveinpeace.SettingsReceiver.SetIconNum"
         const val ACTION_NAME_SETTINGS = "com.maary.liveinpeace.SettingsReceiver"
         const val BROADCAST_ACTION_MUTE = "com.maary.liveinpeace.MUTE_MEDIA"
+        const val REQUESTING_WAIT_MILLIS = 500
     }
 }
