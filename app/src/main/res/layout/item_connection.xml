@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:layout_margin="16dp"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         app:layout_constraintStart_toEndOf="@id/device_icon"
         app:layout_constraintTop_toTopOf="@id/device_icon"
-        android:textSize="32sp"
+        android:textSize="24sp"
         android:layout_marginStart="16dp"
         android:textStyle="bold"
         tools:text="Headphone"/>
@@ -36,7 +36,7 @@
         app:layout_constraintTop_toBottomOf="@id/device_name"
         app:layout_constraintBottom_toBottomOf="@id/device_icon"
         app:layout_constraintStart_toEndOf="@id/device_icon"
-        android:textSize="24sp"
+        android:textSize="16sp"
         tools:text="3hrs"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

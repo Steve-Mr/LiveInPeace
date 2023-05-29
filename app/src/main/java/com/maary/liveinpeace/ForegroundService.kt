@@ -21,6 +21,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.TaskStackBuilder
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
@@ -180,7 +181,6 @@ class ForegroundService: Service() {
                         if (baseConnection != null) {
                             connectionDao.insert(
                                 Connection(
-                                    id = baseConnection.id,
                                     name = baseConnection.name,
                                     type = baseConnection.type,
                                     connectedTime = baseConnection.connectedTime,
@@ -266,6 +266,17 @@ class ForegroundService: Service() {
             snoozePendingIntent
         ).build()
 
+        val historyIntent = Intent(this, HistoryActivity::class.java)
+        historyIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+        val pendingHistoryIntent = PendingIntent.getActivity(context, 0, historyIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val actionHistory: NotificationCompat.Action = NotificationCompat.Action.Builder(
+            R.drawable.ic_action_history,
+            resources.getString(R.string.history),
+            pendingHistoryIntent
+        ).build()
+
         val muteMediaIntent = Intent(context, MuteMediaReceiver::class.java)
         muteMediaIntent.action = BROADCAST_ACTION_MUTE
         val pendingMuteIntent = PendingIntent.getBroadcast(context, 0, muteMediaIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -283,6 +294,7 @@ class ForegroundService: Service() {
             .setContentIntent(pendingMuteIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
+            .addAction(actionHistory)
             .build()
     }
 

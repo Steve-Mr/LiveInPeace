@@ -7,7 +7,7 @@ import java.sql.Date
 
 @Entity(tableName = "connection_table")
 data class Connection(
-    @PrimaryKey(autoGenerate = true) val id: Int,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "type") val type: Int,
     @ColumnInfo(name = "connected_time") val connectedTime: Long,

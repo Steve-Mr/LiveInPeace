@@ -6,10 +6,12 @@ import com.maary.liveinpeace.database.ConnectionRepository
 import java.sql.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class ConnectionViewModel(private val connectionRepository: ConnectionRepository) : ViewModel() {
 
 //    val allConnectionsOnDate: LiveData<List<Connection>> = connectionRepository.getAllConnectionsOnDate()
+    val allConnectionsToday: LiveData<List<Connection>> = connectionRepository.allConnectionsToday.asLiveData()
 
     fun getAllConnectionsOnDate(queryDate: String): LiveData<List<Connection>> {
         return connectionRepository.getAllConnectionsOnDate(queryDate).asLiveData()

@@ -10,7 +10,7 @@ import java.sql.Date
 @Dao
 interface ConnectionDao {
 
-    @Query("SELECT * FROM connection_table WHERE date = :queryDate")
+    @Query("SELECT * FROM connection_table WHERE date = :queryDate ORDER BY connected_time DESC")
     fun loadAllConnectionsOnDate(queryDate: String): Flow<List<Connection>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

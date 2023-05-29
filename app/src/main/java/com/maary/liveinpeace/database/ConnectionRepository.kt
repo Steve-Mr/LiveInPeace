@@ -3,10 +3,13 @@ package com.maary.liveinpeace.database
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.flow.Flow
 import java.sql.Date
+import java.time.LocalDate
 
 class ConnectionRepository(private val connectionDao: ConnectionDao) {
 
 //    val allConnectionsOnDate: Flow<List<Connection>> = connectionDao.loadAllConnectionsOnDate(queryDate)
+
+    val allConnectionsToday = connectionDao.loadAllConnectionsOnDate(LocalDate.now().toString())
 
     fun getAllConnectionsOnDate(queryDate: String): Flow<List<Connection>> {
         return connectionDao.loadAllConnectionsOnDate(queryDate)
