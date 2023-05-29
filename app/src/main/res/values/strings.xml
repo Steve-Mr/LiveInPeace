@@ -13,6 +13,10 @@
     <string name="settings">Settings</string>
     <string name="settings_channel_description">Notification channel for Settings.</string>
     <string name="cancel">Cancel</string>
+    <string name="alert">Do you need a break?</string>
+    <string name="device_connected_too_long">%1$s has been connected for over two hours.</string>
+    <string name="channel_alert">Alerts</string>
+    <string name="alert_channel_description">Notification channel for reminding about excessive device connection time.</string>
     <string-array name="array_volume_comment">
         <item>Shhhhhhh…</item>
         <item>Perfectly Balanced, As All Things Should Be…</item>

@@ -14,6 +14,7 @@ import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
@@ -52,6 +53,12 @@ class QSTileService: TileService() {
                 CHANNEL_ID_SETTINGS,
                 resources.getString(R.string.channel_settings),
                 resources.getString(R.string.settings_channel_description)
+            )
+            createNotificationChannel(
+                NotificationManager.IMPORTANCE_HIGH,
+                CHANNEL_ID_ALERT,
+                resources.getString(R.string.channel_alert),
+                resources.getString(R.string.alert_channel_description)
             )
 
             applicationContext.startForegroundService(intent)

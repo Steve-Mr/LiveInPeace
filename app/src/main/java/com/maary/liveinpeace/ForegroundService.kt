@@ -2,6 +2,7 @@ package com.maary.liveinpeace
 
 import android.annotation.SuppressLint
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -22,16 +23,34 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_ALERT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
+import com.maary.liveinpeace.database.Connection
+import com.maary.liveinpeace.database.ConnectionDao
+import com.maary.liveinpeace.database.ConnectionRoomDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.util.Timer
+import java.util.TimerTask
 import kotlin.properties.Delegates
 
 class ForegroundService: Service() {
+
+    private lateinit var database: ConnectionRoomDatabase
+    private lateinit var connectionDao: ConnectionDao
+
+    private val deviceTimerMap: MutableMap<String, DeviceTimer> = mutableMapOf()
+    private val deviceMap: MutableMap<String, Connection> = mutableMapOf()
 
     private val volumeDrawableIds = intArrayOf(
         R.drawable.ic_volume_silent,
@@ -60,8 +79,6 @@ class ForegroundService: Service() {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        Log.v("MUTE_", currentVolume.toString())
-        Log.v("MUTE_", maxVolume.toString())
         return 100 * currentVolume / maxVolume
     }
 
@@ -79,7 +96,7 @@ class ForegroundService: Service() {
         @SuppressLint("MissingPermission")
         override fun updateNotification(context: Context) {
             with(NotificationManagerCompat.from(applicationContext)){
-                notify(ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+                notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
             }
         }
     }
@@ -87,17 +104,106 @@ class ForegroundService: Service() {
     private val audioDeviceCallback = object : AudioDeviceCallback() {
         @SuppressLint("MissingPermission")
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
+
+            val connectedTime = System.currentTimeMillis()
+
+            // 在设备连接时记录设备信息和接入时间
+            addedDevices?.forEach { deviceInfo ->
+                if (deviceInfo.type in listOf(
+                        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
+                        AudioDeviceInfo.TYPE_FM_TUNER,
+                        AudioDeviceInfo.TYPE_REMOTE_SUBMIX,
+                        AudioDeviceInfo.TYPE_TELEPHONY,
+                        28,
+                    )
+                ) { return@forEach }
+                val deviceName = deviceInfo.productName.toString().trim()
+                if (deviceName == android.os.Build.MODEL) return@forEach
+                Log.v("MUTE_DEVICE", deviceName)
+                Log.v("MUTE_TYPE", deviceInfo.type.toString())
+                deviceMap[deviceName] = Connection(
+                    id=1,
+                    name = deviceInfo.productName.toString(),
+                    type = deviceInfo.type,
+                    connectedTime = connectedTime,
+                    disconnectedTime = null,
+                    duration = null,
+                    date = LocalDate.now().toString()
+                )
+                // 执行其他逻辑，比如将设备信息保存到数据库或日志中
+            }
+
+            for ((productName, _) in deviceMap){
+                if (deviceTimerMap.containsKey(productName)) continue
+                val deviceTimer = DeviceTimer(context = applicationContext, deviceName = productName)
+                Log.v("MUTE_DEVICEMAP", productName)
+                deviceTimer.start()
+                deviceTimerMap[productName] = deviceTimer
+            }
+
+            Log.v("MUTE_MAP", deviceMap.toString())
+
             // Handle newly added audio devices
             with(NotificationManagerCompat.from(applicationContext)){
-                notify(ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+                notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
             }
         }
 
         @SuppressLint("MissingPermission")
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
+
+//            val deviceDisconnectedTimeMap: MutableMap<String, AudioDeviceInfo> = mutableMapOf()
+
+            // 在设备连接时记录设备信息和接入时间
+            removedDevices?.forEach { deviceInfo ->
+                val deviceName = deviceInfo.productName.toString()
+//                deviceDisconnectedTimeMap[deviceName] = deviceInfo
+
+                val disconnectedTime = System.currentTimeMillis()
+
+                if (deviceMap.containsKey(deviceName)){
+
+                    val connectedTime = deviceMap[deviceName]?.connectedTime
+                    val connectionTime = disconnectedTime - connectedTime!!
+
+                    if (connectionTime > ALERT_TIME){
+                        val notificationManager: NotificationManager =
+                            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                        notificationManager.cancel(ID_NOTIFICATION_ALERT)
+                    }
+
+                    val baseConnection = deviceMap[deviceName]
+                    CoroutineScope(Dispatchers.IO).launch {
+                        if (baseConnection != null) {
+                            connectionDao.insert(
+                                Connection(
+                                    id = baseConnection.id,
+                                    name = baseConnection.name,
+                                    type = baseConnection.type,
+                                    connectedTime = baseConnection.connectedTime,
+                                    disconnectedTime = disconnectedTime,
+                                    duration = connectionTime,
+                                    date = baseConnection.date
+                                    )
+                            )
+                        }
+                    }
+
+                    deviceMap.remove(deviceName)
+                }
+                if (deviceTimerMap.containsKey(deviceName)){
+                    deviceTimerMap[deviceName]?.stop()
+                    deviceTimerMap.remove(deviceName)
+                }
+                // 执行其他逻辑，比如将设备信息保存到数据库或日志中
+            }
+
             // Handle removed audio devices
             with(NotificationManagerCompat.from(applicationContext)){
-                notify(ID_NOTIFICATION_FOREGROUND, createNotification(applicationContext))
+                notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
             }
         }
     }
@@ -115,6 +221,9 @@ class ForegroundService: Service() {
             addAction("android.media.VOLUME_CHANGED_ACTION")
         }
         registerReceiver(volumeChangeReceiver, filter)
+
+        database = ConnectionRoomDatabase.getDatabase(applicationContext)
+        connectionDao = database.connectionDao()
     }
 
     override fun onDestroy() {
@@ -127,7 +236,7 @@ class ForegroundService: Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(ID_NOTIFICATION_FOREGROUND, createNotification(context = applicationContext))
+        startForeground(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(context = applicationContext))
         isForegroundServiceRunning = true
 
         // 返回 START_STICKY，以确保 Service 在被终止后能够自动重启
@@ -139,7 +248,7 @@ class ForegroundService: Service() {
     }
 
     @SuppressLint("LaunchActivityFromNotification")
-    private fun createNotification(context: Context): Notification {
+    private fun createForegroundNotification(context: Context): Notification {
         val currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
         volumeComment = resources.getStringArray(R.array.array_volume_comment)
@@ -170,6 +279,7 @@ class ForegroundService: Service() {
                 volumeComment[currentVolumeLevel],
                 currentVolume))
             .setSmallIcon(nIcon)
+            .setOngoing(true)
             .setContentIntent(pendingMuteIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
@@ -228,6 +338,49 @@ class ForegroundService: Service() {
         }
         else {
             return IconCompat.createWithResource(context, volumeDrawableIds[currentVolumeLevel])
+        }
+    }
+
+    class DeviceTimer(private val context: Context, private val deviceName: String) : TimerTask() {
+        private var timer: Timer? = null
+
+        @SuppressLint("MissingPermission")
+        override fun run() {
+            // 记录一条 log
+            Log.v("MUTE_TIMER","RUN")
+
+            with(NotificationManagerCompat.from(context)){
+                notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
+            }
+
+            // 停止计时器
+            timer?.cancel()
+        }
+
+        fun start() {
+            // 创建计时器
+            timer = Timer()
+            // 启动计时器，20分钟后执行任务
+            timer?.schedule(this, ALERT_TIME)//20 * 60 * 1000)
+            Log.v("MUTE_TIMER", "TIMER_STARTED")
+        }
+
+        fun stop() {
+            // 取消计时器
+            timer?.cancel()
+        }
+
+        private fun createTimerNotification(context: Context, deviceName: String) : Notification {
+            return NotificationCompat.Builder(context, CHANNEL_ID_ALERT)
+                .setContentTitle(context.getString(R.string.alert))
+                .setContentText(String.format(
+                    context.resources.getString(R.string.device_connected_too_long),
+                    deviceName
+                ))
+                .setSmallIcon(R.drawable.ic_headphone)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build()
         }
     }
 }

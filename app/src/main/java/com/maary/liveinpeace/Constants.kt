@@ -16,6 +16,7 @@ class Constants {
         const val ID_NOTIFICATION_SETTINGS = 3
         // 前台通知 id
         const val ID_NOTIFICATION_FOREGROUND = 1
+        const val ID_NOTIFICATION_ALERT = 2
         // 设置图像式图标 Action
         const val ACTION_NAME_SET_IMG = "com.maary.liveinpeace.SettingsReceiver.SetIconImg"
         // 设置字符式图标 Action
@@ -30,5 +31,7 @@ class Constants {
         const val CHANNEL_ID_DEFAULT = "LIP_FOREGROUND"
         // 设置通知频道 ID
         const val CHANNEL_ID_SETTINGS = "LIP_SETTINGS"
+        const val CHANNEL_ID_ALERT = "LIP_ALERT"
+        const val ALERT_TIME: Long = 2*60*60*1000
     }
 }
