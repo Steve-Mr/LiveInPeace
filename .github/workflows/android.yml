@@ -86,7 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-arm64-v8a
+          asset_name: LiveInPeace-arm64-v8a.apk
           asset_path: ${{ env.APK_FILE }}
           asset_content_type: application/zip
 
@@ -96,7 +96,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-armeabi-v7a
+          asset_name: LiveInPeace-armeabi-v7a.apk
           asset_path: ${{ env.APK_FILE_ARMV7 }}
           asset_content_type: application/zip
 
@@ -106,7 +106,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-x86_64
+          asset_name: LiveInPeace-x86_64.apk
           asset_path: ${{ env.APK_FILE_X64 }}
           asset_content_type: application/zip
 
@@ -116,7 +116,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-x86
+          asset_name: LiveInPeace-x86.apk
           asset_path: ${{ env.APK_FILE_X86 }}
           asset_content_type: application/zip
 
