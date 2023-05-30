@@ -32,6 +32,6 @@ class Constants {
         // 设置通知频道 ID
         const val CHANNEL_ID_SETTINGS = "LIP_SETTINGS"
         const val CHANNEL_ID_ALERT = "LIP_ALERT"
-        const val ALERT_TIME: Long = 2*60*60*1000
+        const val ALERT_TIME: Long = 1000//2*60*60*1000
     }
 }

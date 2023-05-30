@@ -16,7 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LiveInPeace">
 
-        <activity android:name=".HistoryActivity"/>
+        <activity android:name=".HistoryActivity" android:theme="@style/Theme.LiveInPeace"/>
 
         <service android:name=".ForegroundService"
             android:exported="false">

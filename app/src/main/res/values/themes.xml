@@ -3,16 +3,23 @@
     <style name="Theme.LiveInPeace" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <!-- Status bar color. -->
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:statusBarColor">?attr/colorSurfaceContainerHighest</item>
+        <item name="android:windowLightStatusBar"> true </item>
+
+<!--        <item name="android:windowTranslucentStatus">true</item>-->
         <item name="android:navigationBarColor">
             @android:color/transparent
         </item>
+
         <!-- Customize your theme here. -->
     </style>
 
     <style name="title_style" parent="@style/Base.TextAppearance.AppCompat.Title">
         <item name="android:textSize">20sp</item>
+
+    </style>
+
+    <style name="ToggleButtonStyle" parent="ThemeOverlay.Material3.Button">
 
     </style>
 </resources>

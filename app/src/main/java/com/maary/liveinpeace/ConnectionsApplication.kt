@@ -9,13 +9,11 @@ import kotlinx.coroutines.SupervisorJob
 
 class ConnectionsApplication: Application() {
 
-    val applicationScope = CoroutineScope(SupervisorJob())
-
     val database by lazy { ConnectionRoomDatabase.getDatabase(this) }
     val repository by lazy { ConnectionRepository(database.connectionDao()) }
 
     override fun onCreate() {
         super.onCreate()
-        DynamicColors.applyToActivitiesIfAvailable(this);
+        DynamicColors.applyToActivitiesIfAvailable(this)
     }
 }

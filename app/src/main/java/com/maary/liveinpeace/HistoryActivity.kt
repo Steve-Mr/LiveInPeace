@@ -1,5 +1,6 @@
 package com.maary.liveinpeace
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -7,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.shape.MaterialShapeDrawable
 import com.maary.liveinpeace.databinding.ActivityHistoryBinding
 import java.time.LocalDate
 
@@ -14,7 +16,6 @@ import java.time.LocalDate
 class HistoryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHistoryBinding
-    private val newConnectionActivityRequestCode = 1
     private val connectionViewModel: ConnectionViewModel by viewModels {
         ConnectionViewModelFactory((application as ConnectionsApplication).repository)
 
@@ -23,8 +24,11 @@ class HistoryActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+//        window.statusBarColor = Color.TRANSPARENT
         binding = DataBindingUtil.setContentView(this, R.layout.activity_history)
         setContentView(binding.root)
+
+//        binding.appbar.statusBarForeground = MaterialShapeDrawable.createWithElevationOverlay(applicationContext)
 
         val connectionAdapter = ConnectionListAdapter()
         binding.historyList.adapter = connectionAdapter
