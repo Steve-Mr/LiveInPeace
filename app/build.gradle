@@ -1,6 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'kotlin-android'
+    id 'kotlin-kapt'
 }
 
 def keystorePropertiesFile = rootProject.file("key.properties")
@@ -16,9 +18,14 @@ android {
         applicationId "com.maary.liveinpeace"
         minSdk 31
         targetSdk 33
-        versionCode 2
-        versionName "1.0"
+        versionCode 3
+        versionName "2.0_alpha"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        viewBinding true
+        dataBinding true
     }
     splits {
         // Configures multiple APKs based on ABI.
@@ -76,7 +83,30 @@ android {
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.10.1'
-//    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    implementation "androidx.activity:activity-ktx:1.7.2"
+    implementation 'androidx.databinding:databinding-runtime:8.0.2'
+
+
+    def lifecycle_version = "2.6.1"
+
+    // LiveData
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycle_version"
+
+
+    def room_version = "2.6.0-alpha01"
+
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-ktx:2.5.1"
+    kapt "androidx.room:room-compiler:$room_version"
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
