@@ -1,13 +1,13 @@
-package com.maary.liveinpeace
+package com.maary.liveinpeace.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import com.maary.liveinpeace.Constants.Companion.DEBOUNCE_TIME_MS
 
 abstract class VolumeReceiver : BroadcastReceiver() {
-    private val DEBOUNCE_TIME_MS = 500 // 500ms
     private var lastUpdateTime: Long = 0
     private val handler = Handler(Looper.getMainLooper())
 

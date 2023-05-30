@@ -18,7 +18,8 @@ Quiet - Wishing for peace - Wishing for rest - Rest - RIP - Live in peace
 2. Notification channels and priority may need to be adjusted manually.
 3. Notification icon may not be prominent enough.
 4. There may be performance issues when using numeric notification icons, and when the volume is at maximum, it will display `!!` instead of `100`.   
-5. Any kind of bug is possible
+5. "Disable Alert" and "Enable Alert" in the settings refer to the option of disabling or enabling the notification for prolonged headphone connection time. Due to the width limitation of the notification button, it may not clearly convey the meaning. There is a plan to implement a settings interface using an Activity in the future, but it's not guaranteed and may take a considerable amount of time.
+6. Any kind of bug is possible
 
 ## Credits
 

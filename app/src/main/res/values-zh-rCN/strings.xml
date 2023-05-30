@@ -21,4 +21,16 @@
         <item>ROOOOOCK!</item>
     </string-array>
     <string name="cancel">取消</string>
+    <string name="alert">不休息下吗？</string>
+    <string name="device_connected_too_long">设备 %1$s 已经连接超过两个小时了</string>
+    <string name="channel_alert">提醒</string>
+    <string name="alert_channel_description">用于提醒耳机使用时间过长的通知渠道</string>
+    <string name="history">连接记录</string>
+    <string name="timeline">时间线</string>
+    <string name="summary">汇总</string>
+    <string name="icon_of_device">设备图标</string>
+    <string name="duration_minutes">%02d 分钟</string>
+    <string name="duration_hour">%02d 小时 %02d 分钟</string>
+    <string name="enable_watching">启用提醒</string>
+    <string name="disable_watching">禁用提醒</string>
 </resources>
