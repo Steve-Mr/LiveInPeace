@@ -1,6 +1,7 @@
 package com.maary.liveinpeace
 
 import android.content.Context
+import android.media.AudioDeviceInfo
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,7 +30,17 @@ class ConnectionListAdapter : ListAdapter<Connection, ConnectionListAdapter.Conn
         private val connectionDurationView: TextView = itemView.findViewById(R.id.device_connection_time)
 
         fun bind(deviceName: String?, type: Int?,duration: Long?) {
-            connectionIconView.setImageResource(R.drawable.ic_headphone)
+            if (type in listOf(
+                    AudioDeviceInfo.TYPE_BLE_BROADCAST,
+                    AudioDeviceInfo.TYPE_BLE_HEADSET,
+                    AudioDeviceInfo.TYPE_BLE_SPEAKER,
+                    AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+                    AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                    )){
+                connectionIconView.setImageResource(R.drawable.ic_bluetooth_round)
+            } else {
+                connectionIconView.setImageResource(R.drawable.ic_headphone_round)
+            }
             connectionDeviceNameView.text = deviceName
             connectionDurationView.text = duration?.let { formatMilliseconds(itemView.context, it) }
         }

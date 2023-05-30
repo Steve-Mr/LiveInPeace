@@ -2,14 +2,14 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="16dp"
+    android:layout_margin="8dp"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
     <ImageView
         android:id="@+id/device_icon"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -23,7 +23,8 @@
         android:layout_height="wrap_content"
         app:layout_constraintStart_toEndOf="@id/device_icon"
         app:layout_constraintTop_toTopOf="@id/device_icon"
-        android:textSize="24sp"
+        android:textSize="18sp"
+        android:textColor="?android:attr/textColorPrimary"
         android:layout_marginStart="16dp"
         android:textStyle="bold"
         tools:text="Headphone"/>
@@ -33,10 +34,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
+        android:textColor="?android:attr/textColorPrimary"
         app:layout_constraintTop_toBottomOf="@id/device_name"
         app:layout_constraintBottom_toBottomOf="@id/device_icon"
         app:layout_constraintStart_toEndOf="@id/device_icon"
-        android:textSize="16sp"
+        android:textSize="12sp"
         tools:text="3hrs"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

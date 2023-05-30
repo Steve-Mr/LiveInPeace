@@ -88,7 +88,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
     implementation "androidx.activity:activity-ktx:1.7.2"
-    implementation 'androidx.databinding:databinding-runtime:7.1.2'
+    implementation 'androidx.databinding:databinding-runtime:8.0.2'
 
 
     def lifecycle_version = "2.6.1"

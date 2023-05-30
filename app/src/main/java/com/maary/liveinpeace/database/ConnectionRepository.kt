@@ -11,6 +11,8 @@ class ConnectionRepository(private val connectionDao: ConnectionDao) {
 
     val allConnectionsToday = connectionDao.loadAllConnectionsOnDate(LocalDate.now().toString())
 
+    val summaryToday:Flow<List<Connection>> = connectionDao.loadSummaryOnDate(LocalDate.now().toString())
+
     fun getAllConnectionsOnDate(queryDate: String): Flow<List<Connection>> {
         return connectionDao.loadAllConnectionsOnDate(queryDate)
     }

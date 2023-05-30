@@ -17,7 +17,7 @@
                 style="?attr/collapsingToolbarLayoutLargeStyle"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/collapsingToolbarLayoutLargeSize"
-                app:contentScrim="?attr/colorPrimary"
+                app:contentScrim="?attr/colorPrimaryContainer"
                 app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
 
                 <com.google.android.material.appbar.MaterialToolbar
@@ -34,13 +34,22 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="@android:color/transparent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" >
+
             <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggle_button"
+                android:id="@+id/toggle_history"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:layout_anchor="@id/history_list"
-                app:layout_anchorGravity="top|center_horizontal"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior">
+                android:layout_gravity="center"
+                android:layout_margin="16dp"
+                app:selectionRequired="true"
+                app:singleSelection="true"
+                android:background="@android:color/transparent">
                 <Button
                     android:id="@+id/button_timeline"
                     style="?attr/materialButtonOutlinedStyle"
@@ -62,8 +71,14 @@
             android:layout_height="match_parent"
             android:clipChildren="false"
             android:clipToPadding="false"
-            android:padding="16dp"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+            android:padding="16dp"/>
+
+        </LinearLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+
+
+
+
 </layout>
