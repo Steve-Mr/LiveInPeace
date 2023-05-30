@@ -30,6 +30,8 @@ import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_ALERT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_FOREGROUND
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_ALERTS
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_FORE
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
@@ -99,6 +101,23 @@ class ForegroundService: Service() {
             with(NotificationManagerCompat.from(applicationContext)){
                 notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
             }
+        }
+    }
+
+    private fun deGroupNotification(context: Context){
+        var isGrouped = false
+        val notificationManager: NotificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val activeNotifications = notificationManager.activeNotifications
+        for (notification in activeNotifications) {
+            if (notification.isGroup){
+                isGrouped = true
+                Log.v("MUTE_NOTIFICATION", "VOLUME CHANGER")
+                break
+            }
+        }
+        if (isGrouped) {
+            notificationManager.cancelAll()
         }
     }
 
@@ -248,7 +267,7 @@ class ForegroundService: Service() {
     }
 
     @SuppressLint("LaunchActivityFromNotification")
-    private fun createForegroundNotification(context: Context): Notification {
+    fun createForegroundNotification(context: Context): Notification {
         val currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
         volumeComment = resources.getStringArray(R.array.array_volume_comment)
@@ -295,6 +314,8 @@ class ForegroundService: Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
             .addAction(actionHistory)
+            .setGroup(ID_NOTIFICATION_GROUP_FORE)
+            .setGroupSummary(false)
             .build()
     }
 
@@ -392,6 +413,8 @@ class ForegroundService: Service() {
                 .setSmallIcon(R.drawable.ic_headphone)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
+                .setGroupSummary(false)
+                .setGroup(ID_NOTIFICATION_GROUP_ALERTS)
                 .build()
         }
     }

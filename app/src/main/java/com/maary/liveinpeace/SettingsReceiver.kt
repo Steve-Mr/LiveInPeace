@@ -5,12 +5,14 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.maary.liveinpeace.Constants.Companion.ACTION_CANCEL
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SET_IMG
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SET_NUM
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
@@ -90,7 +92,6 @@ class SettingsReceiver: BroadcastReceiver() {
                     p0.stopService(foregroundServiceIntent)
                     p0.startForegroundService(foregroundServiceIntent)
                     notificationManager.cancel(ID_NOTIFICATION_SETTINGS)
-
                 }
             }
         }
@@ -140,6 +141,8 @@ class SettingsReceiver: BroadcastReceiver() {
                 .setShowWhen(false)
                 .setContentTitle(context.resources?.getString(R.string.LIP_settings))
                 .setOnlyAlertOnce(true)
+                .setGroupSummary(false)
+                .setGroup(ID_NOTIFICATION_GROUP_SETTINGS)
         }
 
         for (action in actions) {

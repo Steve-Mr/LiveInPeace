@@ -33,5 +33,9 @@ class Constants {
         const val CHANNEL_ID_SETTINGS = "LIP_SETTINGS"
         const val CHANNEL_ID_ALERT = "LIP_ALERT"
         const val ALERT_TIME: Long = 1000//2*60*60*1000
+        const val DEBOUNCE_TIME_MS = 500
+        const val ID_NOTIFICATION_GROUP_FORE = "LIP_notification_group_foreground"
+        const val ID_NOTIFICATION_GROUP_SETTINGS = "LIP_notification_group_settings"
+        const val ID_NOTIFICATION_GROUP_ALERTS = "LIP_notification_group_alerts"
     }
 }
