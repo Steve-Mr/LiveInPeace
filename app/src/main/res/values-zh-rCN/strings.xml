@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Live in Peace</string>
-    <string name="current_volume_percent">当前电量百分比为 %2$d%% \n%1$s</string>
+    <string name="current_volume_percent">当前音量百分比为 %2$d%% \n%1$s</string>
     <string name="to_be_or_not">静音还是不静音</string>
     <string name="qstile_active">小心哦</string>
     <string name="qstile_inactive">随便吧</string>
