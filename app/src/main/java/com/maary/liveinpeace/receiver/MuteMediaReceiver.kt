@@ -1,10 +1,11 @@
-package com.maary.liveinpeace
+package com.maary.liveinpeace.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.util.Log
+import com.maary.liveinpeace.Constants
 
 class MuteMediaReceiver: BroadcastReceiver() {
     override fun onReceive(p0: Context?, p1: Intent?) {

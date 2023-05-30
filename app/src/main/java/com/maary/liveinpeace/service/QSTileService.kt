@@ -1,4 +1,4 @@
-package com.maary.liveinpeace
+package com.maary.liveinpeace.service
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -18,6 +18,7 @@ import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
+import com.maary.liveinpeace.R
 
 class QSTileService: TileService() {
 
@@ -42,24 +43,32 @@ class QSTileService: TileService() {
         val intent = Intent(this, ForegroundService::class.java)
 
         if (!ForegroundService.isForegroundServiceRunning()){
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_DEFAULT,
-                resources.getString(R.string.default_channel),
-                resources.getString(R.string.default_channel_description)
-            )
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_SETTINGS,
-                resources.getString(R.string.channel_settings),
-                resources.getString(R.string.settings_channel_description)
-            )
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_HIGH,
-                CHANNEL_ID_ALERT,
-                resources.getString(R.string.channel_alert),
-                resources.getString(R.string.alert_channel_description)
-            )
+
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (notificationManager.getNotificationChannel(CHANNEL_ID_DEFAULT) == null){
+                createNotificationChannel(
+                    NotificationManager.IMPORTANCE_MIN,
+                    CHANNEL_ID_DEFAULT,
+                    resources.getString(R.string.default_channel),
+                    resources.getString(R.string.default_channel_description)
+                )
+            }
+            if (notificationManager.getNotificationChannel(CHANNEL_ID_SETTINGS) == null) {
+                createNotificationChannel(
+                    NotificationManager.IMPORTANCE_MIN,
+                    CHANNEL_ID_SETTINGS,
+                    resources.getString(R.string.channel_settings),
+                    resources.getString(R.string.settings_channel_description)
+                )
+            }
+            if (notificationManager.getNotificationChannel(CHANNEL_ID_ALERT) == null) {
+                createNotificationChannel(
+                    NotificationManager.IMPORTANCE_HIGH,
+                    CHANNEL_ID_ALERT,
+                    resources.getString(R.string.channel_alert),
+                    resources.getString(R.string.alert_channel_description)
+                )
+            }
 
             applicationContext.startForegroundService(intent)
             tile.state = Tile.STATE_ACTIVE

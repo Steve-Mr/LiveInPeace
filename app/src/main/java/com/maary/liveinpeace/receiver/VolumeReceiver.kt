@@ -1,4 +1,4 @@
-package com.maary.liveinpeace
+package com.maary.liveinpeace.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context

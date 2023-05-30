@@ -23,6 +23,8 @@
     <string name="icon_of_device">Device icon</string>
     <string name="duration_minutes">%02d min</string>
     <string name="duration_hour">%02d h %02d min</string>
+    <string name="enable_watching">Enable alert</string>
+    <string name="disable_watching">Disable alert</string>
     <string-array name="array_volume_comment">
         <item>Shhhhhhh…</item>
         <item>Perfectly Balanced, As All Things Should Be…</item>

@@ -18,14 +18,14 @@
 
         <activity android:name=".HistoryActivity" android:theme="@style/Theme.LiveInPeace"/>
 
-        <service android:name=".ForegroundService"
+        <service android:name=".service.ForegroundService"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.media.VOLUME_CHANGED_ACTION"/>
             </intent-filter>
         </service>
 
-        <service android:name=".QSTileService"
+        <service android:name=".service.QSTileService"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:icon="@drawable/icon_qs_off"
             android:exported="true">
@@ -34,7 +34,7 @@
             </intent-filter>
         </service>
 
-        <receiver android:name=".BootCompleteReceiver"
+        <receiver android:name=".receiver.BootCompleteReceiver"
             android:exported="false">
             <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.BOOT" />
@@ -44,14 +44,14 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".SettingsReceiver"
+        <receiver android:name=".receiver.SettingsReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.maary.liveinpeace.SettingsReceiver"/>
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".MuteMediaReceiver"
+        <receiver android:name=".receiver.MuteMediaReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.maary.liveinpeace.MUTE_MEDIA" />

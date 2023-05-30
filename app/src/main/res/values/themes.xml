@@ -4,22 +4,12 @@
         <!-- Primary brand color. -->
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorSurfaceContainerHighest</item>
-        <item name="android:windowLightStatusBar"> true </item>
-
-<!--        <item name="android:windowTranslucentStatus">true</item>-->
-        <item name="android:navigationBarColor">
-            @android:color/transparent
-        </item>
-
-        <!-- Customize your theme here. -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
     <style name="title_style" parent="@style/Base.TextAppearance.AppCompat.Title">
         <item name="android:textSize">20sp</item>
-
     </style>
 
-    <style name="ToggleButtonStyle" parent="ThemeOverlay.Material3.Button">
-
-    </style>
 </resources>

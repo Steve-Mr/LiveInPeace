@@ -86,7 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-arm64-v8a
+          asset_name: LiveInPeace-arm64-v8a.apk
           asset_path: ${{ env.APK_FILE }}
           asset_content_type: application/zip
 
@@ -96,7 +96,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-armeabi-v7a
+          asset_name: LiveInPeace-armeabi-v7a.apk
           asset_path: ${{ env.APK_FILE_ARMV7 }}
           asset_content_type: application/zip
 
@@ -106,7 +106,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-x86_64
+          asset_name: LiveInPeace-x86_64.apk
           asset_path: ${{ env.APK_FILE_X64 }}
           asset_content_type: application/zip
 
@@ -116,7 +116,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-x86
+          asset_name: LiveInPeace-x86.apk
           asset_path: ${{ env.APK_FILE_X86 }}
           asset_content_type: application/zip
 
@@ -154,7 +154,7 @@ jobs:
         run: |
           chmod +x telegram-bot-api-binary
           ./telegram-bot-api-binary --api-id=21724 --api-hash=3e0cb5efcd52300aec5994fdfc5bdc16 --local 2>&1 > /dev/null &
-          curl https://gist.githubusercontent.com/Steve-Mr/c1576c67c010100c961209c70c294196/raw/9813867a3f5e6c0b7b37bf0baaefa553035fcc9c/uploadCI.py -o uploadCI.py
+          curl https://raw.githubusercontent.com/Steve-Mr/LiveInPeace/dev/.github/scripts/upload.py -o uploadCI.py
           python uploadCI.py > upload.txt
           cat upload.txt
         env:

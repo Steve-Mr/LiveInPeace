@@ -1,4 +1,4 @@
-package com.maary.liveinpeace
+package com.maary.liveinpeace.service
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -17,11 +17,12 @@ import android.graphics.Rect
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.TaskStackBuilder
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
@@ -35,16 +36,20 @@ import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_FORE
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
+import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
+import com.maary.liveinpeace.HistoryActivity
+import com.maary.liveinpeace.R
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.database.ConnectionDao
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
+import com.maary.liveinpeace.receiver.MuteMediaReceiver
+import com.maary.liveinpeace.receiver.SettingsReceiver
+import com.maary.liveinpeace.receiver.VolumeReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.util.Timer
-import java.util.TimerTask
 import kotlin.properties.Delegates
 
 class ForegroundService: Service() {
@@ -156,12 +161,15 @@ class ForegroundService: Service() {
                 // 执行其他逻辑，比如将设备信息保存到数据库或日志中
             }
 
-            for ((productName, _) in deviceMap){
-                if (deviceTimerMap.containsKey(productName)) continue
-                val deviceTimer = DeviceTimer(context = applicationContext, deviceName = productName)
-                Log.v("MUTE_DEVICEMAP", productName)
-                deviceTimer.start()
-                deviceTimerMap[productName] = deviceTimer
+            val sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
+            if (sharedPreferences.getBoolean(PREF_WATCHING_CONNECTING_TIME, false)){
+                for ((productName, _) in deviceMap){
+                    if (deviceTimerMap.containsKey(productName)) continue
+                    val deviceTimer = DeviceTimer(context = applicationContext, deviceName = productName)
+                    Log.v("MUTE_DEVICEMAP", productName)
+                    deviceTimer.start()
+                    deviceTimerMap[productName] = deviceTimer
+                }
             }
 
             Log.v("MUTE_MAP", deviceMap.toString())
@@ -175,13 +183,9 @@ class ForegroundService: Service() {
         @SuppressLint("MissingPermission")
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
 
-//            val deviceDisconnectedTimeMap: MutableMap<String, AudioDeviceInfo> = mutableMapOf()
-
             // 在设备连接时记录设备信息和接入时间
             removedDevices?.forEach { deviceInfo ->
                 val deviceName = deviceInfo.productName.toString()
-//                deviceDisconnectedTimeMap[deviceName] = deviceInfo
-
                 val disconnectedTime = System.currentTimeMillis()
 
                 if (deviceMap.containsKey(deviceName)){
@@ -213,9 +217,13 @@ class ForegroundService: Service() {
 
                     deviceMap.remove(deviceName)
                 }
-                if (deviceTimerMap.containsKey(deviceName)){
-                    deviceTimerMap[deviceName]?.stop()
-                    deviceTimerMap.remove(deviceName)
+
+                val sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
+                if (sharedPreferences.getBoolean(PREF_WATCHING_CONNECTING_TIME, false)){
+                    if (deviceTimerMap.containsKey(deviceName)){
+                        deviceTimerMap[deviceName]?.stop()
+                        deviceTimerMap.remove(deviceName)
+                    }
                 }
                 // 执行其他逻辑，比如将设备信息保存到数据库或日志中
             }
@@ -326,7 +334,9 @@ class ForegroundService: Service() {
             var count = currentVolume
             var isCountLow = false
             var isCountHigh = false
-            val immutableBackground = BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_background)
+            val immutableBackground = BitmapFactory.decodeResource(context.resources,
+                R.drawable.ic_notification_background
+            )
             val background = immutableBackground.copy(Bitmap.Config.ARGB_8888, true)
 
             val paint = Paint().apply {
@@ -374,33 +384,62 @@ class ForegroundService: Service() {
         }
     }
 
-    class DeviceTimer(private val context: Context, private val deviceName: String) : TimerTask() {
-        private var timer: Timer? = null
+    class DeviceTimer(private val context: Context, private val deviceName: String) : Runnable {
+        private val handler = Handler(Looper.getMainLooper())
+        private var isRunning = false
+        private var notifyCount = 0
 
         @SuppressLint("MissingPermission")
         override fun run() {
-            // 记录一条 log
-            Log.v("MUTE_TIMER","RUN")
+            // 延迟一定时间后再执行任务
+            val delayMillis = ALERT_TIME
 
-            with(NotificationManagerCompat.from(context)){
-                notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
+            if (notifyCount == 0) {
+                // 第一次执行，延迟 ALERT_TIME 时间后执行 notify
+                handler.postDelayed({
+                    with(NotificationManagerCompat.from(context)) {
+                        notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
+                    }
+                    notifyCount++
+                    // 继续执行后续任务
+                    handler.postDelayed(this, delayMillis)
+                }, delayMillis)
+            } else if (notifyCount < MAX_NOTIFY_COUNT) {
+                // 后续执行，达到通知次数后停止任务
+                with(NotificationManagerCompat.from(context)) {
+                    notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
+                }
+                notifyCount++
+                if (notifyCount < MAX_NOTIFY_COUNT) {
+                    // 继续执行后续任务
+                    handler.postDelayed(this, delayMillis)
+                }
+            } else {
+                // 达到通知次数后停止任务执行
+                stop()
+                return
             }
-
-            // 停止计时器
-            timer?.cancel()
         }
 
         fun start() {
-            // 创建计时器
-            timer = Timer()
-            // 启动计时器，20分钟后执行任务
-            timer?.schedule(this, ALERT_TIME)//20 * 60 * 1000)
-            Log.v("MUTE_TIMER", "TIMER_STARTED")
+            if (!isRunning) {
+                isRunning = true
+                notifyCount = 0
+                handler.post(this)
+                Log.v("MUTE_TIMER", "TIMER_STARTED")
+            }
         }
 
         fun stop() {
-            // 取消计时器
-            timer?.cancel()
+            if (isRunning) {
+                isRunning = false
+                notifyCount = 0
+                handler.removeCallbacks(this)
+            }
+        }
+
+        companion object {
+            private const val MAX_NOTIFY_COUNT = 1
         }
 
         private fun createTimerNotification(context: Context, deviceName: String) : Notification {
