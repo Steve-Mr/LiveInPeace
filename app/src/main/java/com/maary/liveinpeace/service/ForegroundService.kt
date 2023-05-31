@@ -384,62 +384,24 @@ class ForegroundService: Service() {
         }
     }
 
-    class DeviceTimer(private val context: Context, private val deviceName: String) : Runnable {
+    class DeviceTimer(private val context: Context, private val deviceName: String) {
         private val handler = Handler(Looper.getMainLooper())
-        private var isRunning = false
-        private var notifyCount = 0
 
         @SuppressLint("MissingPermission")
-        override fun run() {
-            // 延迟一定时间后再执行任务
-            val delayMillis = ALERT_TIME
-
-            if (notifyCount == 0) {
-                // 第一次执行，延迟 ALERT_TIME 时间后执行 notify
-                handler.postDelayed({
-                    with(NotificationManagerCompat.from(context)) {
-                        notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
-                    }
-                    notifyCount++
-                    // 继续执行后续任务
-                    handler.postDelayed(this, delayMillis)
-                }, delayMillis)
-            } else if (notifyCount < MAX_NOTIFY_COUNT) {
-                // 后续执行，达到通知次数后停止任务
-                with(NotificationManagerCompat.from(context)) {
-                    notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
-                }
-                notifyCount++
-                if (notifyCount < MAX_NOTIFY_COUNT) {
-                    // 继续执行后续任务
-                    handler.postDelayed(this, delayMillis)
-                }
-            } else {
-                // 达到通知次数后停止任务执行
-                stop()
-                return
+        private val runnable = Runnable {
+            with(NotificationManagerCompat.from(context)) {
+                notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
             }
         }
 
         fun start() {
-            if (!isRunning) {
-                isRunning = true
-                notifyCount = 0
-                handler.post(this)
-                Log.v("MUTE_TIMER", "TIMER_STARTED")
-            }
+            handler.postDelayed(runnable, ALERT_TIME)
+            Log.v("MUTE_TIMER", "TIMER_STARTED")
         }
 
         fun stop() {
-            if (isRunning) {
-                isRunning = false
-                notifyCount = 0
-                handler.removeCallbacks(this)
-            }
-        }
+            handler.removeCallbacks(runnable)
 
-        companion object {
-            private const val MAX_NOTIFY_COUNT = 1
         }
 
         private fun createTimerNotification(context: Context, deviceName: String) : Notification {

@@ -7,6 +7,7 @@ import androidx.core.view.WindowCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.maary.liveinpeace.databinding.ActivityHistoryBinding
+import java.time.LocalDate
 
 
 class HistoryActivity : AppCompatActivity() {
@@ -32,20 +33,21 @@ class HistoryActivity : AppCompatActivity() {
             finish()
         }
 
-        connectionViewModel.allConnectionsToday.observe(this) { connections ->
+        connectionViewModel.getAllConnectionsOnDate(LocalDate.now().toString()).observe(this) { connections ->
             connections.let { connectionAdapter.submitList(it) }
         }
 
-        binding.toggleHistory.addOnButtonCheckedListener { group, checkedId, isChecked ->
+        binding.toggleHistory.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
             if (checkedId == R.id.button_timeline) {
-                connectionViewModel.allConnectionsToday.observe(this) { connections ->
+                connectionViewModel.getAllConnectionsOnDate(LocalDate.now().toString()).observe(this) { connections ->
                     connections.let { connectionAdapter.submitList(it) }
                 }
             }
             if (checkedId == R.id.button_summary) {
-                connectionViewModel.summaryToday.observe(this) { connections ->
+                connectionViewModel.getSummaryOnDate(LocalDate.now().toString()).observe(this) { connections ->
                     connections.let { connectionAdapter.submitList(it) }
+
                 }
             }
         }
