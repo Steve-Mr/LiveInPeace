@@ -33,4 +33,8 @@
     <string name="duration_hour">%02d 小时 %02d 分钟</string>
     <string name="enable_watching">启用提醒</string>
     <string name="disable_watching">禁用提醒</string>
+    <string name="current_connections">当前连接</string>
+    <string name="connections_history">历史连接</string>
+    <string name="has_already_connected_for">已连接</string>
+    <string name="device_connection_state">设备连接状态指示</string>
 </resources>

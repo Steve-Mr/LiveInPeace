@@ -62,14 +62,19 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" >
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:background="@android:color/transparent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" >
+            android:background="@android:color/transparent">
 
             <TextView
+                android:id="@+id/title_current"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/current_connections"
@@ -88,6 +93,7 @@
                 tools:itemCount="2"/>
 
             <TextView
+                android:id="@+id/title_history"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/connections_history"
@@ -105,6 +111,7 @@
                 tools:listitem="@layout/item_connection"/>
 
         </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

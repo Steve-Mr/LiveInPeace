@@ -150,6 +150,31 @@ class ForegroundService: Service() {
         }
     }
 
+    private fun saveDateWhenStop(){
+        val disconnectedTime = System.currentTimeMillis()
+
+        for ( (deviceName, connection) in deviceMap){
+
+            val connectedTime = connection.connectedTime
+            val connectionTime = disconnectedTime - connectedTime!!
+
+            CoroutineScope(Dispatchers.IO).launch {
+                connectionDao.insert(
+                    Connection(
+                        name = connection.name,
+                        type = connection.type,
+                        connectedTime = connection.connectedTime,
+                        disconnectedTime = disconnectedTime,
+                        duration = connectionTime,
+                        date = connection.date
+                    )
+                )
+            }
+            deviceMap.remove(deviceName)
+        }
+        return
+    }
+
     private val audioDeviceCallback = object : AudioDeviceCallback() {
         @SuppressLint("MissingPermission")
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
@@ -280,12 +305,12 @@ class ForegroundService: Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-
+        saveDateWhenStop()
         // 取消注册音量变化广播接收器
         unregisterReceiver(volumeChangeReceiver)
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         isForegroundServiceRunning = false
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

@@ -17,7 +17,7 @@
     <string name="device_connected_too_long">%1$s has been connected for over two hours.</string>
     <string name="channel_alert">Alerts</string>
     <string name="alert_channel_description">Notification channel for reminding about excessive device connection time.</string>
-    <string name="history">History</string>
+    <string name="history">Connections</string>
     <string name="timeline">Timeline</string>
     <string name="summary">Summary</string>
     <string name="icon_of_device">Device icon</string>
