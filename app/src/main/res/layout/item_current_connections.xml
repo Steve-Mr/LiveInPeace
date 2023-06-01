@@ -26,7 +26,6 @@
         android:textSize="18sp"
         android:textColor="?android:attr/textColorPrimary"
         android:layout_marginStart="16dp"
-
         tools:text="Headphone"/>
 
     <ImageView
