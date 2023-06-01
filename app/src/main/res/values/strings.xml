@@ -25,6 +25,10 @@
     <string name="duration_hour">%02d h %02d min</string>
     <string name="enable_watching">Enable alert</string>
     <string name="disable_watching">Disable alert</string>
+    <string name="current_connections">Current Connections</string>
+    <string name="connections_history">Connections Histroy</string>
+    <string name="has_already_connected_for">Already connected</string>
+    <string name="device_connection_state">Device connection state indicator</string>
     <string-array name="array_volume_comment">
         <item>Shhhhhhh…</item>
         <item>Perfectly Balanced, As All Things Should Be…</item>
