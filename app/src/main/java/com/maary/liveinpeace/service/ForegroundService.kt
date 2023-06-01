@@ -38,6 +38,7 @@ import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
 import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
+import com.maary.liveinpeace.DeviceMapChangeListener
 import com.maary.liveinpeace.HistoryActivity
 import com.maary.liveinpeace.R
 import com.maary.liveinpeace.database.Connection
@@ -58,7 +59,7 @@ class ForegroundService: Service() {
     private lateinit var connectionDao: ConnectionDao
 
     private val deviceTimerMap: MutableMap<String, DeviceTimer> = mutableMapOf()
-    private val deviceMap: MutableMap<String, Connection> = mutableMapOf()
+//    private val deviceMap: MutableMap<String, Connection> = mutableMapOf()
 
     private val volumeDrawableIds = intArrayOf(
         R.drawable.ic_volume_silent,
@@ -80,6 +81,29 @@ class ForegroundService: Service() {
         @JvmStatic
         fun isForegroundServiceRunning(): Boolean {
             return isForegroundServiceRunning
+        }
+
+        private val deviceMap: MutableMap<String, Connection> = mutableMapOf()
+
+        // 在伴生对象中定义一个静态方法，用于其他类访问deviceMap
+        fun getConnections(): MutableList<Connection> {
+            return deviceMap.values.toMutableList()
+        }
+
+        private val deviceMapChangeListeners: MutableList<DeviceMapChangeListener> = mutableListOf()
+
+        fun addDeviceMapChangeListener(listener: DeviceMapChangeListener) {
+            deviceMapChangeListeners.add(listener)
+        }
+
+        fun removeDeviceMapChangeListener(listener: DeviceMapChangeListener) {
+            deviceMapChangeListeners.remove(listener)
+        }
+    }
+
+    private fun notifyDeviceMapChange() {
+        deviceMapChangeListeners.forEach { listener ->
+            listener.onDeviceMapChanged(deviceMap)
         }
     }
 
@@ -126,6 +150,31 @@ class ForegroundService: Service() {
         }
     }
 
+    private fun saveDateWhenStop(){
+        val disconnectedTime = System.currentTimeMillis()
+
+        for ( (deviceName, connection) in deviceMap){
+
+            val connectedTime = connection.connectedTime
+            val connectionTime = disconnectedTime - connectedTime!!
+
+            CoroutineScope(Dispatchers.IO).launch {
+                connectionDao.insert(
+                    Connection(
+                        name = connection.name,
+                        type = connection.type,
+                        connectedTime = connection.connectedTime,
+                        disconnectedTime = disconnectedTime,
+                        duration = connectionTime,
+                        date = connection.date
+                    )
+                )
+            }
+            deviceMap.remove(deviceName)
+        }
+        return
+    }
+
     private val audioDeviceCallback = object : AudioDeviceCallback() {
         @SuppressLint("MissingPermission")
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
@@ -158,6 +207,7 @@ class ForegroundService: Service() {
                     duration = null,
                     date = LocalDate.now().toString()
                 )
+                notifyDeviceMapChange()
                 // 执行其他逻辑，比如将设备信息保存到数据库或日志中
             }
 
@@ -216,6 +266,7 @@ class ForegroundService: Service() {
                     }
 
                     deviceMap.remove(deviceName)
+                    notifyDeviceMapChange()
                 }
 
                 val sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
@@ -254,12 +305,12 @@ class ForegroundService: Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-
+        saveDateWhenStop()
         // 取消注册音量变化广播接收器
         unregisterReceiver(volumeChangeReceiver)
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         isForegroundServiceRunning = false
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
