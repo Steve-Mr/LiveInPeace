@@ -26,7 +26,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_ALERT
@@ -51,7 +53,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import kotlin.properties.Delegates
 
 class ForegroundService: Service() {
 
@@ -59,7 +60,6 @@ class ForegroundService: Service() {
     private lateinit var connectionDao: ConnectionDao
 
     private val deviceTimerMap: MutableMap<String, DeviceTimer> = mutableMapOf()
-//    private val deviceMap: MutableMap<String, Connection> = mutableMapOf()
 
     private val volumeDrawableIds = intArrayOf(
         R.drawable.ic_volume_silent,
@@ -68,8 +68,6 @@ class ForegroundService: Service() {
         R.drawable.ic_volume_high,
         R.drawable.ic_volume_mega
     )
-
-    private var iconMode by Delegates.notNull<Int>()
 
     private lateinit var volumeComment: Array<String>
 
@@ -127,30 +125,14 @@ class ForegroundService: Service() {
     private val volumeChangeReceiver = object : VolumeReceiver() {
         @SuppressLint("MissingPermission")
         override fun updateNotification(context: Context) {
+            Log.v("MUTE_TEST", "VOLUME_CHANGE_RECEIVER")
             with(NotificationManagerCompat.from(applicationContext)){
                 notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
             }
         }
     }
 
-    private fun deGroupNotification(context: Context){
-        var isGrouped = false
-        val notificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val activeNotifications = notificationManager.activeNotifications
-        for (notification in activeNotifications) {
-            if (notification.isGroup){
-                isGrouped = true
-                Log.v("MUTE_NOTIFICATION", "VOLUME CHANGER")
-                break
-            }
-        }
-        if (isGrouped) {
-            notificationManager.cancelAll()
-        }
-    }
-
-    private fun saveDateWhenStop(){
+    private fun saveDataWhenStop(){
         val disconnectedTime = System.currentTimeMillis()
 
         for ( (deviceName, connection) in deviceMap){
@@ -289,7 +271,7 @@ class ForegroundService: Service() {
     override fun onCreate() {
         super.onCreate()
 
-        iconMode = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE).getInt(PREF_ICON, MODE_IMG)
+        Log.v("MUTE_TEST", "ON_CREATE")
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioManager.registerAudioDeviceCallback(audioDeviceCallback, null)
@@ -302,27 +284,43 @@ class ForegroundService: Service() {
 
         database = ConnectionRoomDatabase.getDatabase(applicationContext)
         connectionDao = database.connectionDao()
-    }
-
-    override fun onDestroy() {
-        saveDateWhenStop()
-        // 取消注册音量变化广播接收器
-        unregisterReceiver(volumeChangeReceiver)
-        audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
-        isForegroundServiceRunning = false
-        super.onDestroy()
+        startForeground(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(context = applicationContext))
+        notifyForegroundServiceState(true)
+        Log.v("MUTE_TEST", "ON_CREATE_FINISH")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(context = applicationContext))
-        isForegroundServiceRunning = true
-
+        super.onStartCommand(intent, flags, startId)
+        Log.v("MUTE_TEST", "ON_START_COMMAND")
         // 返回 START_STICKY，以确保 Service 在被终止后能够自动重启
         return START_STICKY
     }
 
+    override fun onDestroy() {
+        Log.v("MUTE_TEST", "ON_DESTROY")
+
+        saveDataWhenStop()
+        notifyForegroundServiceState(false)
+        // 取消注册音量变化广播接收器
+        unregisterReceiver(volumeChangeReceiver)
+        audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(ID_NOTIFICATION_FOREGROUND)
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        Log.v("MUTE_TEST", "ON_DESTROY_FINISH")
+        super.onDestroy()
+    }
+
     override fun onBind(p0: Intent?): IBinder? {
         TODO("Not yet implemented")
+    }
+
+    private fun notifyForegroundServiceState(isRunning: Boolean) {
+        isForegroundServiceRunning = isRunning
+        val intent = Intent(BROADCAST_ACTION_FOREGROUND)
+        intent.putExtra(BROADCAST_FOREGROUND_INTENT_EXTRA, isRunning)
+        sendBroadcast(intent)
     }
 
     @SuppressLint("LaunchActivityFromNotification")
@@ -330,7 +328,8 @@ class ForegroundService: Service() {
         val currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
         volumeComment = resources.getStringArray(R.array.array_volume_comment)
-        val nIcon = generateNotificationIcon(context, iconMode)
+        val nIcon = generateNotificationIcon(context,
+            getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE).getInt(PREF_ICON, MODE_IMG))
 
         val settingsIntent = Intent(this, SettingsReceiver::class.java).apply {
             action = ACTION_NAME_SETTINGS
