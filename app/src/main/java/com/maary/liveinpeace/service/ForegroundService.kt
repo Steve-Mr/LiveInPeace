@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -17,9 +16,7 @@ import android.graphics.Rect
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -29,18 +26,18 @@ import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_ALERT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_FOREGROUND
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_ALERTS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_FORE
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
+import com.maary.liveinpeace.Constants.Companion.PREF_NOTIFY_TEXT_SIZE
 import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import com.maary.liveinpeace.DeviceMapChangeListener
+import com.maary.liveinpeace.DeviceTimer
 import com.maary.liveinpeace.HistoryActivity
 import com.maary.liveinpeace.R
 import com.maary.liveinpeace.database.Connection
@@ -297,17 +294,18 @@ class ForegroundService: Service() {
     }
 
     override fun onDestroy() {
+        notifyForegroundServiceState(false)
+
         Log.v("MUTE_TEST", "ON_DESTROY")
 
         saveDataWhenStop()
-        notifyForegroundServiceState(false)
         // 取消注册音量变化广播接收器
         unregisterReceiver(volumeChangeReceiver)
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         val notificationManager: NotificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(ID_NOTIFICATION_FOREGROUND)
-        stopForeground(STOP_FOREGROUND_REMOVE)
+//        stopForeground(STOP_FOREGROUND_REMOVE)
         Log.v("MUTE_TEST", "ON_DESTROY_FINISH")
         super.onDestroy()
     }
@@ -377,96 +375,66 @@ class ForegroundService: Service() {
             .build()
     }
 
+    private val textBounds = Rect()
+
     private fun generateNotificationIcon(context: Context, iconMode: Int): IconCompat {
-        val currentVolume = getVolumePercentage(context)
+        var currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
-        if (iconMode == MODE_NUM){
-            var count = currentVolume
-            var isCountLow = false
-            var isCountHigh = false
-            val immutableBackground = BitmapFactory.decodeResource(context.resources,
-                R.drawable.ic_notification_background
+        if (iconMode == MODE_NUM) {
+
+            val iconSize =
+                resources.getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
+            val background = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
+
+            val sharedPref = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
+            val textSizePref = sharedPref.getFloat(
+                PREF_NOTIFY_TEXT_SIZE, 0.0f
             )
-            val background = immutableBackground.copy(Bitmap.Config.ARGB_8888, true)
 
             val paint = Paint().apply {
                 color = Color.WHITE
-                textSize = 100f
                 typeface = context.resources.getFont(R.font.ndot_45)
                 isFakeBoldText = true
                 isAntiAlias = true
             }
 
-            if (count == 100){
-                count = 99
-                isCountHigh = true
-            }
-
-            if (count < 10) {
-                count += 10
-                isCountLow = true
-            }
-
-            val textBounds = Rect()
-            paint.getTextBounds(count.toString(), 0, count.toString().length, textBounds)
-            val textWidth = textBounds.width()
-            val textHeight = textBounds.height()
-
             val canvas = Canvas(background)
             val canvasWidth = canvas.width
             val canvasHeight = canvas.height
-            val textSize = (canvasWidth / textWidth * textHeight).coerceAtMost(canvasHeight)
-            paint.textSize = textSize.toFloat()
 
-            if (isCountLow){
-                count-=10
+            if (textSizePref == 0.0f) {
+
+                paint.getTextBounds(99.toString(), 0, 99.toString().length, textBounds)
+                val textWidth = textBounds.width()
+                val textHeight = textBounds.height()
+                val textSize = (canvasWidth / textWidth * textHeight).coerceAtMost(canvasHeight)
+                paint.textSize = textSize.toFloat()
+                with(sharedPref.edit()) {
+                    putFloat(PREF_NOTIFY_TEXT_SIZE, textSize.toFloat())
+                }
+            } else {
+                paint.textSize = textSizePref
             }
 
-            var textToDraw = count.toString()
-            if (isCountHigh) textToDraw = "!!"
-            paint.getTextBounds(count.toString(), 0, count.toString().length, textBounds)
-            canvas.drawText(textToDraw, (canvasWidth - textBounds.width()) / 2f, (canvasHeight + textBounds.height()) / 2f, paint)
+            var textToDraw = currentVolume.toString()
+            if (currentVolume == 100) {
+                currentVolume--
+                textToDraw = "!!"
+            }
+            paint.getTextBounds(
+                currentVolume.toString(), 0,
+                currentVolume.toString().length, textBounds)
+            canvas.drawText(
+                textToDraw,
+                (canvasWidth - textBounds.width()) / 2f,
+                (canvasHeight + textBounds.height()) / 2f,
+                paint
+            )
 
             return IconCompat.createWithBitmap(background)
         }
         else {
             return IconCompat.createWithResource(context, volumeDrawableIds[currentVolumeLevel])
-        }
-    }
-
-    class DeviceTimer(private val context: Context, private val deviceName: String) {
-        private val handler = Handler(Looper.getMainLooper())
-
-        @SuppressLint("MissingPermission")
-        private val runnable = Runnable {
-            with(NotificationManagerCompat.from(context)) {
-                notify(ID_NOTIFICATION_ALERT, createTimerNotification(context = context, deviceName = deviceName))
-            }
-        }
-
-        fun start() {
-            handler.postDelayed(runnable, ALERT_TIME)
-            Log.v("MUTE_TIMER", "TIMER_STARTED")
-        }
-
-        fun stop() {
-            handler.removeCallbacks(runnable)
-
-        }
-
-        private fun createTimerNotification(context: Context, deviceName: String) : Notification {
-            return NotificationCompat.Builder(context, CHANNEL_ID_ALERT)
-                .setContentTitle(context.getString(R.string.alert))
-                .setContentText(String.format(
-                    context.resources.getString(R.string.device_connected_too_long),
-                    deviceName
-                ))
-                .setSmallIcon(R.drawable.ic_headphone)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setGroupSummary(false)
-                .setGroup(ID_NOTIFICATION_GROUP_ALERTS)
-                .build()
         }
     }
 }

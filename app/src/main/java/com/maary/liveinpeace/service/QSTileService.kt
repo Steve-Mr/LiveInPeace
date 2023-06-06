@@ -102,16 +102,20 @@ class QSTileService: TileService() {
 
     private val foregroundServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            Log.v("MUTE_QS", "TRIGGERED")
+
             val isForegroundServiceRunning = intent.getBooleanExtra(
                 BROADCAST_FOREGROUND_INTENT_EXTRA, false)
             // 在此处处理前台服务状态的变化
             val tile = qsTile
 
             if (!isForegroundServiceRunning){
+                Log.v("MUTE_QS", "NOT RUNNING")
                 tile.state = Tile.STATE_INACTIVE
                 tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_off)
                 tile.label = getString(R.string.qstile_inactive)
-
+                val foregroundIntent = Intent(context, ForegroundService::class.java)
+                applicationContext.startForegroundService(foregroundIntent)
             }else{
                 tile.state = Tile.STATE_ACTIVE
                 tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_one)

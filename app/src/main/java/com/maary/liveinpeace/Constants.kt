@@ -12,6 +12,7 @@ class Constants {
         const val SHARED_PREF = "com.maary.liveinpeace.pref"
         // 图标类型的 SharedPref 项目名称
         const val PREF_ICON =  "icon_type"
+        const val PREF_NOTIFY_TEXT_SIZE = "notification_text_size"
         const val PREF_WATCHING_CONNECTING_TIME = "watching_connecting"
         // 设置通知 id
         const val ID_NOTIFICATION_SETTINGS = 3
