@@ -30,7 +30,7 @@
     <string name="summary">汇总</string>
     <string name="icon_of_device">设备图标</string>
     <string name="duration_minutes">%02d 分钟</string>
-    <string name="duration_hour">%02d 小时 %02d 分钟</string>
+    <string name="duration_hour">%1$d 小时 %2$d 分钟</string>
     <string name="enable_watching">启用提醒</string>
     <string name="disable_watching">禁用提醒</string>
     <string name="current_connections">当前连接</string>

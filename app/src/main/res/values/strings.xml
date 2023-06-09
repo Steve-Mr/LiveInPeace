@@ -22,11 +22,11 @@
     <string name="summary">Summary</string>
     <string name="icon_of_device">Device icon</string>
     <string name="duration_minutes">%02d min</string>
-    <string name="duration_hour">%02d h %02d min</string>
+    <string name="duration_hour">%1$d h %2$d min</string>
     <string name="enable_watching">Enable alert</string>
     <string name="disable_watching">Disable alert</string>
     <string name="current_connections">Current Connections</string>
-    <string name="connections_history">Connections Histroy</string>
+    <string name="connections_history">Connections History</string>
     <string name="has_already_connected_for">Already connected</string>
     <string name="device_connection_state">Device connection state indicator</string>
     <string-array name="array_volume_comment">
