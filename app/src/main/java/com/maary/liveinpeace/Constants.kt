@@ -12,6 +12,7 @@ class Constants {
         const val SHARED_PREF = "com.maary.liveinpeace.pref"
         // 图标类型的 SharedPref 项目名称
         const val PREF_ICON =  "icon_type"
+        const val PREF_NOTIFY_TEXT_SIZE = "notification_text_size"
         const val PREF_WATCHING_CONNECTING_TIME = "watching_connecting"
         // 设置通知 id
         const val ID_NOTIFICATION_SETTINGS = 3
@@ -30,6 +31,9 @@ class Constants {
         const val ACTION_NAME_SETTINGS = "com.maary.liveinpeace.receiver.SettingsReceiver"
         // 静音广播名称
         const val BROADCAST_ACTION_MUTE = "com.maary.liveinpeace.MUTE_MEDIA"
+        // 前台服务状态改变广播
+        const val BROADCAST_ACTION_FOREGROUND = "com.maary.liveinpeace.ACTION_FOREGROUND_SERVICE_STATE"
+        const val BROADCAST_FOREGROUND_INTENT_EXTRA = "isForegroundServiceRunning"
         // 当音量操作动作太过频繁后等待时间
         const val REQUESTING_WAIT_MILLIS = 500
         // 不同通知频道 ID
