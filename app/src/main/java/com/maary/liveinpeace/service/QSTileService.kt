@@ -3,8 +3,10 @@ package com.maary.liveinpeace.service
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -14,6 +16,8 @@ import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
@@ -86,19 +90,39 @@ class QSTileService: TileService() {
 
     override fun onStartListening() {
         super.onStartListening()
-        val tile = qsTile
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(BROADCAST_ACTION_FOREGROUND)
+        registerReceiver(foregroundServiceReceiver, intentFilter)
+    }
 
-        if (!ForegroundService.isForegroundServiceRunning()){
-            tile.state = Tile.STATE_INACTIVE
-            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_off)
-            tile.label = getString(R.string.qstile_inactive)
+    override fun onStopListening() {
+        super.onStopListening()
+        unregisterReceiver(foregroundServiceReceiver)
+    }
 
-        }else{
-            tile.state = Tile.STATE_ACTIVE
-            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_one)
-            tile.label = getString(R.string.qstile_active)
+    private val foregroundServiceReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            Log.v("MUTE_QS", "TRIGGERED")
+
+            val isForegroundServiceRunning = intent.getBooleanExtra(
+                BROADCAST_FOREGROUND_INTENT_EXTRA, false)
+            // 在此处处理前台服务状态的变化
+            val tile = qsTile
+
+            if (!isForegroundServiceRunning){
+                Log.v("MUTE_QS", "NOT RUNNING")
+                tile.state = Tile.STATE_INACTIVE
+                tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_off)
+                tile.label = getString(R.string.qstile_inactive)
+                val foregroundIntent = Intent(context, ForegroundService::class.java)
+                applicationContext.startForegroundService(foregroundIntent)
+            }else{
+                tile.state = Tile.STATE_ACTIVE
+                tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_one)
+                tile.label = getString(R.string.qstile_active)
+            }
+            tile.updateTile()
         }
-        tile.updateTile()
     }
 
     private fun createNotificationChannel(importance:Int, id: String ,name:String, descriptionText: String) {

@@ -31,6 +31,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE"/>
+                <action android:name="com.maary.liveinpeace.ACTION_FOREGROUND_SERVICE_STATE"/>
             </intent-filter>
         </service>
 
