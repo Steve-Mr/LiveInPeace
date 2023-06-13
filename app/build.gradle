@@ -18,8 +18,8 @@ android {
         applicationId "com.maary.liveinpeace"
         minSdk 31
         targetSdk 33
-        versionCode 3
-        versionName "2.0_beta"
+        versionCode 4
+        versionName "2.1_beta"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -55,6 +55,9 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
             signingConfig signingConfigs.release
         }
     }

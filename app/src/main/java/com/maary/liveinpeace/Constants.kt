@@ -48,5 +48,7 @@ class Constants {
         const val ID_NOTIFICATION_GROUP_FORE = "LIP_notification_group_foreground"
         const val ID_NOTIFICATION_GROUP_SETTINGS = "LIP_notification_group_settings"
         const val ID_NOTIFICATION_GROUP_ALERTS = "LIP_notification_group_alerts"
+        const val PATTERN_DATE_DATABASE = "yyyy-MM-dd"
+        const val PATTERN_DATE_BUTTON = "MM/dd"
     }
 }
