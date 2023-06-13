@@ -18,3 +18,4 @@ app/src/androidTest
 app/src/test
 key.properties
 .idea/
+key.base64
