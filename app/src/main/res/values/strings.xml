@@ -29,6 +29,7 @@
     <string name="connections_history">Connections History</string>
     <string name="has_already_connected_for">Already connected</string>
     <string name="device_connection_state">Device connection state indicator</string>
+    <string name="select_date">Select a Date</string>
     <string-array name="array_volume_comment">
         <item>Shhhhhhh…</item>
         <item>Perfectly Balanced, As All Things Should Be…</item>

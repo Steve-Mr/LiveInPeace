@@ -37,4 +37,5 @@
     <string name="connections_history">历史连接</string>
     <string name="has_already_connected_for">已连接</string>
     <string name="device_connection_state">设备连接状态指示</string>
+    <string name="select_date">选择日期</string>
 </resources>

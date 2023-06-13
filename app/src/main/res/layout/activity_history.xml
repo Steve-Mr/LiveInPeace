@@ -37,28 +37,47 @@
 
             </com.google.android.material.appbar.CollapsingToolbarLayout>
 
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggle_history"
-                android:layout_width="wrap_content"
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                android:background="@android:color/transparent"
-                app:selectionRequired="true"
-                app:singleSelection="true">
-                <Button
-                    android:id="@+id/button_timeline"
-                    style="?attr/materialButtonOutlinedStyle"
+                android:layout_margin="16dp">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggle_history"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/timeline" />
+                    android:background="@android:color/transparent"
+                    app:selectionRequired="true"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:singleSelection="true">
+                    <Button
+                        android:id="@+id/button_timeline"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/timeline" />
+
+                    <Button
+                        android:id="@+id/button_summary"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/summary" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
 
                 <Button
-                    android:id="@+id/button_summary"
-                    style="?attr/materialButtonOutlinedStyle"
+                    android:id="@+id/button_calendar"
+                    style="@style/Widget.Material3.Button.Icon"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/summary" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
+                    app:icon = "@drawable/ic_calendar"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    tools:text="06/13"/>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </com.google.android.material.appbar.AppBarLayout>
 
