@@ -20,6 +20,7 @@ import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
 import com.maary.liveinpeace.R
@@ -72,6 +73,18 @@ class QSTileService: TileService() {
                     resources.getString(R.string.channel_alert),
                     resources.getString(R.string.alert_channel_description)
                 )
+            }
+            if (notificationManager.getNotificationChannel(CHANNEL_ID_PROTECT) == null) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID_PROTECT,
+                    resources.getString(R.string.channel_protection),
+                    NotificationManager.IMPORTANCE_LOW).apply {
+                    description = resources.getString(R.string.protection_channel_description)
+                    enableVibration(false)
+                    setSound(null, null)
+                }
+                // Register the channel with the system
+                notificationManager.createNotificationChannel(channel)
             }
 
             applicationContext.startForegroundService(intent)
