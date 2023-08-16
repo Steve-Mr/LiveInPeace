@@ -14,11 +14,13 @@ class Constants {
         const val PREF_ICON =  "icon_type"
         const val PREF_NOTIFY_TEXT_SIZE = "notification_text_size"
         const val PREF_WATCHING_CONNECTING_TIME = "watching_connecting"
+        const val PREF_ENABLE_EAR_PROTECTION = "ear_protection_enabled"
         // 设置通知 id
         const val ID_NOTIFICATION_SETTINGS = 3
         // 前台通知 id
         const val ID_NOTIFICATION_FOREGROUND = 1
         const val ID_NOTIFICATION_ALERT = 2
+        const val ID_NOTIFICATION_PROTECT = 4
         // 设置图像式图标 Action
         const val ACTION_NAME_SET_IMG = "com.maary.liveinpeace.receiver.SettingsReceiver.SetIconImg"
         // 设置字符式图标 Action
@@ -27,6 +29,8 @@ class Constants {
         const val ACTION_ENABLE_WATCHING = "com.maary.liveinpeace.receiver.SettingsReceiver.EnableWatching"
         // 禁用长时间连接提醒 Action
         const val ACTION_DISABLE_WATCHING = "com.maary.liveinpeace.receiver.SettingsReceiver.DisableWatching"
+        // toggle 设备连接调整音量 Action
+        const val ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT = "com.maary.liveinpeace.receiver.SettingsReceiver.ToggleAdjustment"
         // 设置 Action
         const val ACTION_NAME_SETTINGS = "com.maary.liveinpeace.receiver.SettingsReceiver"
         // 静音广播名称
@@ -40,6 +44,7 @@ class Constants {
         const val CHANNEL_ID_DEFAULT = "LIP_FOREGROUND"
         const val CHANNEL_ID_SETTINGS = "LIP_SETTINGS"
         const val CHANNEL_ID_ALERT = "LIP_ALERT"
+        const val CHANNEL_ID_PROTECT = "LIP_PROTECT"
         // 提醒时间
         const val ALERT_TIME: Long = 2*60*60*1000
         // 延后时间
@@ -48,6 +53,7 @@ class Constants {
         const val ID_NOTIFICATION_GROUP_FORE = "LIP_notification_group_foreground"
         const val ID_NOTIFICATION_GROUP_SETTINGS = "LIP_notification_group_settings"
         const val ID_NOTIFICATION_GROUP_ALERTS = "LIP_notification_group_alerts"
+        const val ID_NOTIFICATION_GROUP_PROTECT = "LIP_notification_group_protect"
         const val PATTERN_DATE_DATABASE = "yyyy-MM-dd"
         const val PATTERN_DATE_BUTTON = "MM/dd"
     }

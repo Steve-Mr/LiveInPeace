@@ -22,16 +22,21 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT
 import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_ALERT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_FORE
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_PROTECT
+import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_PROTECT
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
+import com.maary.liveinpeace.Constants.Companion.PREF_ENABLE_EAR_PROTECTION
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
 import com.maary.liveinpeace.Constants.Companion.PREF_NOTIFY_TEXT_SIZE
 import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
@@ -159,6 +164,7 @@ class ForegroundService: Service() {
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
 
             val connectedTime = System.currentTimeMillis()
+            val sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
 
             // 在设备连接时记录设备信息和接入时间
             addedDevices?.forEach { deviceInfo ->
@@ -187,10 +193,26 @@ class ForegroundService: Service() {
                     date = LocalDate.now().toString()
                 )
                 notifyDeviceMapChange()
+                if (sharedPreferences.getBoolean(PREF_ENABLE_EAR_PROTECTION, false)){
+                    val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    var boolProtected = false
+                    while (getVolumePercentage(applicationContext)>25) {
+                        boolProtected = true
+                        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
+                    }
+                    while (getVolumePercentage(applicationContext)<10) {
+                        boolProtected = true
+                        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
+                    }
+                    if (boolProtected){
+                        with(NotificationManagerCompat.from(applicationContext)){
+                            notify(ID_NOTIFICATION_PROTECT, createProtectionNotification())
+                        }
+                    }
+                }
                 // 执行其他逻辑，比如将设备信息保存到数据库或日志中
             }
 
-            val sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
             if (sharedPreferences.getBoolean(PREF_WATCHING_CONNECTING_TIME, false)){
                 for ((productName, _) in deviceMap){
                     if (deviceTimerMap.containsKey(productName)) continue
@@ -341,6 +363,30 @@ class ForegroundService: Service() {
             snoozePendingIntent
         ).build()
 
+        val sharedPreferences = getSharedPreferences(
+            SHARED_PREF,
+            Context.MODE_PRIVATE
+        )
+
+        var protectionActionTitle = R.string.protection
+        if (sharedPreferences != null){
+            if (sharedPreferences.getBoolean(PREF_ENABLE_EAR_PROTECTION, false)){
+                protectionActionTitle = R.string.dont_protect
+            }
+        }
+
+        val protectionIntent = Intent(this, SettingsReceiver::class.java).apply {
+            action = ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT
+        }
+        val protectionPendingIntent: PendingIntent =
+            PendingIntent.getBroadcast(this, 0, protectionIntent, PendingIntent.FLAG_IMMUTABLE)
+
+        val actionProtection : NotificationCompat.Action = NotificationCompat.Action.Builder(
+            R.drawable.ic_headphones_protection,
+            resources.getString(protectionActionTitle),
+            protectionPendingIntent
+        ).build()
+
         val historyIntent = Intent(this, HistoryActivity::class.java)
         historyIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
 
@@ -370,8 +416,19 @@ class ForegroundService: Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
             .addAction(actionHistory)
+            .addAction(actionProtection)
             .setGroup(ID_NOTIFICATION_GROUP_FORE)
             .setGroupSummary(false)
+            .build()
+    }
+
+    fun createProtectionNotification(): Notification {
+        return NotificationCompat.Builder(this, CHANNEL_ID_PROTECT)
+            .setContentTitle(getString(R.string.ears_protected))
+            .setSmallIcon(R.drawable.ic_headphones_protection)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setGroup(ID_NOTIFICATION_GROUP_PROTECT)
+            .setTimeoutAfter(3000)
             .build()
     }
 
