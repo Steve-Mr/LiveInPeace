@@ -30,6 +30,11 @@
     <string name="has_already_connected_for">Already connected</string>
     <string name="device_connection_state">Device connection state indicator</string>
     <string name="select_date">Select a Date</string>
+    <string name="protection">Protect My Ears</string>
+    <string name="dont_protect">Stop protecting ears</string>
+    <string name="ears_protected">Ears Protected</string>
+    <string name="channel_protection">Protecting ears</string>
+    <string name="protection_channel_description">Auto adjust volume below 25 when connecting to a new device.</string>
     <string-array name="array_volume_comment">
         <item>Shhhhhhh…</item>
         <item>Perfectly Balanced, As All Things Should Be…</item>

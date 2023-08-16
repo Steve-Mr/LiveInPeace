@@ -12,11 +12,13 @@ import com.maary.liveinpeace.Constants.Companion.ACTION_ENABLE_WATCHING
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SET_IMG
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SET_NUM
+import com.maary.liveinpeace.Constants.Companion.ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
+import com.maary.liveinpeace.Constants.Companion.PREF_ENABLE_EAR_PROTECTION
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
 import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
@@ -162,6 +164,24 @@ class SettingsReceiver: BroadcastReceiver() {
                     p0.stopService(foregroundServiceIntent)
                     p0.startForegroundService(foregroundServiceIntent)
                     notificationManager.cancel(ID_NOTIFICATION_SETTINGS)
+                }
+            }
+        }
+
+        if (ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT == p1?.action){
+            val sharedPreferences = p0?.getSharedPreferences(
+                SHARED_PREF,
+                Context.MODE_PRIVATE
+            )
+            if (sharedPreferences != null) {
+                with(sharedPreferences.edit()){
+                    putBoolean(PREF_ENABLE_EAR_PROTECTION,
+                    !sharedPreferences.getBoolean(PREF_ENABLE_EAR_PROTECTION, false)
+                    )
+                    apply()
+                    val foregroundServiceIntent = Intent(p0, ForegroundService::class.java)
+                    p0.stopService(foregroundServiceIntent)
+                    p0.startForegroundService(foregroundServiceIntent)
                 }
             }
         }
