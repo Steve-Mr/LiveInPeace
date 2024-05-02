@@ -43,4 +43,10 @@
     <string name="ears_protected">保护了耳朵</string>
     <string name="channel_protection">保护耳朵</string>
     <string name="protection_channel_description">有新设备连接时自动将音量调节至 25 以下</string>
+    <string name="welcome_channel">初始设置</string>
+    <string name="welcome_channel_description">初次使用权限设置</string>
+    <string name="welcome">欢迎</string>
+    <string name="welcome_description">LiveInPeace 需要这些权限</string>
+    <string name="request_permission_battery">电池</string>
+    <string name="request_permission_notification">通知</string>
 </resources>

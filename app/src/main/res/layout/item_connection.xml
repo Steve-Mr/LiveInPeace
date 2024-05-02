@@ -11,23 +11,25 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@id/device_name"
+        app:layout_constraintBottom_toBottomOf="@id/device_connection_time"
         android:contentDescription="@string/icon_of_device"
         tools:src="@drawable/ic_headphone"
         />
 
     <TextView
         android:id="@+id/device_name"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintStart_toEndOf="@id/device_icon"
-        app:layout_constraintTop_toTopOf="@id/device_icon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         android:textSize="18sp"
         android:textColor="?android:attr/textColorPrimary"
         android:layout_marginStart="16dp"
-
-        tools:text="Headphone"/>
+        android:layout_marginEnd="16dp"
+        android:maxLines="2"
+        tools:text="HeadphoneHeadphoneHeadphoneHeadphoneHeadphone"/>
 
     <ImageView
         android:id="@+id/connection_time_prefix"
@@ -48,7 +50,7 @@
         android:layout_marginStart="8dp"
         android:textColor="?android:attr/textColorPrimary"
         app:layout_constraintTop_toBottomOf="@id/device_name"
-        app:layout_constraintBottom_toBottomOf="@id/device_icon"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/connection_time_prefix"
         android:textSize="12sp"
         tools:text="3hrs"/>
