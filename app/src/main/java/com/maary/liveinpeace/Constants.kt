@@ -15,12 +15,14 @@ class Constants {
         const val PREF_NOTIFY_TEXT_SIZE = "notification_text_size"
         const val PREF_WATCHING_CONNECTING_TIME = "watching_connecting"
         const val PREF_ENABLE_EAR_PROTECTION = "ear_protection_enabled"
+        const val PREF_WELCOME_FINISHED = "welcome_finished"
         // 设置通知 id
         const val ID_NOTIFICATION_SETTINGS = 3
         // 前台通知 id
         const val ID_NOTIFICATION_FOREGROUND = 1
         const val ID_NOTIFICATION_ALERT = 2
         const val ID_NOTIFICATION_PROTECT = 4
+        const val ID_NOTIFICATION_WELCOME = 0
         // 设置图像式图标 Action
         const val ACTION_NAME_SET_IMG = "com.maary.liveinpeace.receiver.SettingsReceiver.SetIconImg"
         // 设置字符式图标 Action
@@ -45,6 +47,7 @@ class Constants {
         const val CHANNEL_ID_SETTINGS = "LIP_SETTINGS"
         const val CHANNEL_ID_ALERT = "LIP_ALERT"
         const val CHANNEL_ID_PROTECT = "LIP_PROTECT"
+        const val CHANNEL_ID_WELCOME = "LIP_WELCOME"
         // 提醒时间
         const val ALERT_TIME: Long = 2*60*60*1000
         // 延后时间

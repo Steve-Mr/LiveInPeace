@@ -35,6 +35,12 @@
     <string name="ears_protected">Ears Protected</string>
     <string name="channel_protection">Protecting ears</string>
     <string name="protection_channel_description">Auto adjust volume below 25 when connecting to a new device.</string>
+    <string name="welcome_channel">Initial Settings</string>
+    <string name="welcome_channel_description">Permission settings for first time use.</string>
+    <string name="welcome">Welcome</string>
+    <string name="welcome_description">LiveInPeace needs permissions to work.</string>
+    <string name="request_permission_battery">Battery</string>
+    <string name="request_permission_notification">Notification</string>
     <string-array name="array_volume_comment">
         <item>Shhhhhhh…</item>
         <item>Perfectly Balanced, As All Things Should Be…</item>
