@@ -23,6 +23,7 @@ class Constants {
         const val ID_NOTIFICATION_ALERT = 2
         const val ID_NOTIFICATION_PROTECT = 4
         const val ID_NOTIFICATION_WELCOME = 0
+        const val ID_NOTIFICATION_SLEEPTIMER = 5
         // 设置图像式图标 Action
         const val ACTION_NAME_SET_IMG = "com.maary.liveinpeace.receiver.SettingsReceiver.SetIconImg"
         // 设置字符式图标 Action
@@ -37,6 +38,11 @@ class Constants {
         const val ACTION_NAME_SETTINGS = "com.maary.liveinpeace.receiver.SettingsReceiver"
         // 静音广播名称
         const val BROADCAST_ACTION_MUTE = "com.maary.liveinpeace.MUTE_MEDIA"
+        const val BROADCAST_ACTION_SLEEPTIMER_CANCEL = "com.maary.liveinpeace.action.CANCEL"
+        const val BROADCAST_ACTION_SLEEPTIMER_INCREMENT = "com.maary.liveinpeace.action.INCREMENT"
+        const val BROADCAST_ACTION_SLEEPTIMER_DECREMENT = "com.maary.liveinpeace.action.DECREMENT"
+        const val BROADCAST_ACTION_SLEEPTIMER_TOGGLE = "com.maary.liveinpeace.sleeptimer.TOGGLE"
+        const val BROADCAST_ACTION_SLEEPTIMER_UPDATE = "com.maary.liveinpeace.sleeptimer.UPDATE"
         // 前台服务状态改变广播
         const val BROADCAST_ACTION_FOREGROUND = "com.maary.liveinpeace.ACTION_FOREGROUND_SERVICE_STATE"
         const val BROADCAST_FOREGROUND_INTENT_EXTRA = "isForegroundServiceRunning"
@@ -48,6 +54,7 @@ class Constants {
         const val CHANNEL_ID_ALERT = "LIP_ALERT"
         const val CHANNEL_ID_PROTECT = "LIP_PROTECT"
         const val CHANNEL_ID_WELCOME = "LIP_WELCOME"
+        const val CHANNEL_ID_SLEEPTIMER = "LIP_SLEEPTIMER"
         // 提醒时间
         const val ALERT_TIME: Long = 2*60*60*1000
         // 延后时间
@@ -57,6 +64,7 @@ class Constants {
         const val ID_NOTIFICATION_GROUP_SETTINGS = "LIP_notification_group_settings"
         const val ID_NOTIFICATION_GROUP_ALERTS = "LIP_notification_group_alerts"
         const val ID_NOTIFICATION_GROUP_PROTECT = "LIP_notification_group_protect"
+        const val ID_NOTIFICATION_GROUP_SLEEPTIMER = "LIP_notification_group_sleeptimer"
         const val PATTERN_DATE_DATABASE = "yyyy-MM-dd"
         const val PATTERN_DATE_BUTTON = "MM/dd"
     }

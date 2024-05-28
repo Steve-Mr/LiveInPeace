@@ -29,6 +29,7 @@ import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_WELCOME
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SETTINGS
@@ -89,6 +90,15 @@ class QSTileService: TileService() {
                 CHANNEL_ID_WELCOME,
                 resources.getString(R.string.welcome_channel),
                 resources.getString(R.string.welcome_channel_description)
+            )
+        }
+
+        if (notificationManager.getNotificationChannel(CHANNEL_ID_SLEEPTIMER) == null){
+            createNotificationChannel(
+                NotificationManager.IMPORTANCE_MIN,
+                CHANNEL_ID_SLEEPTIMER,
+                resources.getString(R.string.sleeptimer_channel),
+                resources.getString(R.string.sleeptimer_channel_description)
             )
         }
 

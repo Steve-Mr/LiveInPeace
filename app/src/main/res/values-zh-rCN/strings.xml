@@ -49,4 +49,7 @@
     <string name="welcome_description">LiveInPeace 需要这些权限</string>
     <string name="request_permission_battery">电池</string>
     <string name="request_permission_notification">通知</string>
+    <string name="sleeptimer_channel">睡眠定时器</string>
+    <string name="sleeptimer_channel_description">用于睡眠定时器的通知</string>
+    <string name="sleep">睡觉！</string>
 </resources>
