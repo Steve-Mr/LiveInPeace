@@ -16,8 +16,10 @@ import android.graphics.Rect
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -26,6 +28,8 @@ import com.maary.liveinpeace.Constants.Companion.ACTION_TOGGLE_AUTO_CONNECTION_A
 import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_TOGGLE
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_UPDATE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
@@ -45,16 +49,20 @@ import com.maary.liveinpeace.DeviceMapChangeListener
 import com.maary.liveinpeace.DeviceTimer
 import com.maary.liveinpeace.HistoryActivity
 import com.maary.liveinpeace.R
+import com.maary.liveinpeace.SleepNotification.find
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.database.ConnectionDao
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
 import com.maary.liveinpeace.receiver.MuteMediaReceiver
 import com.maary.liveinpeace.receiver.SettingsReceiver
+import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.DateFormat
 import java.time.LocalDate
+import java.util.Date
 
 class ForegroundService: Service() {
 
@@ -132,6 +140,15 @@ class ForegroundService: Service() {
                 notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
             }
         }
+    }
+
+    private val sleepReceiver = object : SleepReceiver() {
+        @SuppressLint("MissingPermission")
+        override fun updateNotification(context: Context) {
+            with(NotificationManagerCompat.from(applicationContext)){
+                notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
+            }        }
+
     }
 
     private fun saveDataWhenStop(){
@@ -287,6 +304,7 @@ class ForegroundService: Service() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate() {
         super.onCreate()
 
@@ -300,6 +318,11 @@ class ForegroundService: Service() {
             addAction("android.media.VOLUME_CHANGED_ACTION")
         }
         registerReceiver(volumeChangeReceiver, filter)
+
+        val sleepFilter = IntentFilter().apply {
+            addAction(BROADCAST_ACTION_SLEEPTIMER_UPDATE)
+        }
+        registerReceiver(sleepReceiver, sleepFilter, RECEIVER_NOT_EXPORTED)
 
         database = ConnectionRoomDatabase.getDatabase(applicationContext)
         connectionDao = database.connectionDao()
@@ -323,11 +346,11 @@ class ForegroundService: Service() {
         saveDataWhenStop()
         // 取消注册音量变化广播接收器
         unregisterReceiver(volumeChangeReceiver)
+        unregisterReceiver(sleepReceiver)
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         val notificationManager: NotificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(ID_NOTIFICATION_FOREGROUND)
-//        stopForeground(STOP_FOREGROUND_REMOVE)
         Log.v("MUTE_TEST", "ON_DESTROY_FINISH")
         super.onDestroy()
     }
@@ -387,15 +410,29 @@ class ForegroundService: Service() {
             protectionPendingIntent
         ).build()
 
-        val historyIntent = Intent(this, HistoryActivity::class.java)
-        historyIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//        val historyIntent = Intent(this, HistoryActivity::class.java)
+//        historyIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//
+//        val pendingHistoryIntent = PendingIntent.getActivity(context, 0, historyIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+//
+//        val actionHistory: NotificationCompat.Action = NotificationCompat.Action.Builder(
+//            R.drawable.ic_action_history,
+//            resources.getString(R.string.history),
+//            pendingHistoryIntent
+//        ).build()
 
-        val pendingHistoryIntent = PendingIntent.getActivity(context, 0, historyIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-
-        val actionHistory: NotificationCompat.Action = NotificationCompat.Action.Builder(
-            R.drawable.ic_action_history,
-            resources.getString(R.string.history),
-            pendingHistoryIntent
+        val sleepIntent = Intent(context, MuteMediaReceiver::class.java)
+        sleepIntent.action = BROADCAST_ACTION_SLEEPTIMER_TOGGLE
+        val pendingSleepIntent = PendingIntent.getBroadcast(context, 0, sleepIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val sleepNotification = find()
+        var sleepTitle = resources.getString(R.string.sleep)
+        if (sleepNotification != null ){
+            sleepTitle = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(sleepNotification.`when`))
+        }
+        val actionSleepTimer: NotificationCompat.Action = NotificationCompat.Action.Builder (
+            R.drawable.ic_tile,
+            sleepTitle,
+            pendingSleepIntent
         ).build()
 
         val muteMediaIntent = Intent(context, MuteMediaReceiver::class.java)
@@ -415,7 +452,8 @@ class ForegroundService: Service() {
             .setContentIntent(pendingMuteIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
-            .addAction(actionHistory)
+//            .addAction(actionHistory)
+            .addAction(actionSleepTimer)
             .addAction(actionProtection)
             .setGroup(ID_NOTIFICATION_GROUP_FORE)
             .setGroupSummary(false)
