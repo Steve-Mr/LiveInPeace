@@ -1,7 +1,6 @@
 package com.maary.liveinpeace
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -20,13 +19,12 @@ import com.maary.liveinpeace.SleepNotification.Action.DECREMENT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SLEEPTIMER
-import com.maary.liveinpeace.SleepNotification.show
 import com.maary.liveinpeace.receiver.MuteMediaReceiver
 
 
 object SleepNotification {
 
-    private val TIMEOUT_INITIAL_MILLIS = TimeUnit.SECONDS.toMillis(20)
+    private val TIMEOUT_INITIAL_MILLIS = TimeUnit.MINUTES.toMillis(30)
     private val TIMEOUT_INCREMENT_MILLIS = TimeUnit.MINUTES.toMillis(10)
     private val TIMEOUT_DECREMENT_MILLIS = TimeUnit.MINUTES.toMillis(10)
 
