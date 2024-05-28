@@ -41,6 +41,16 @@
             </intent-filter>
         </service>
 
+        <service android:name=".service.HistoryTileService"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:icon="@drawable/ic_action_history"
+            android:label="@string/history"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
         <receiver android:name=".receiver.BootCompleteReceiver"
             android:exported="false">
             <intent-filter android:priority="1000">
@@ -62,6 +72,11 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="com.maary.liveinpeace.MUTE_MEDIA" />
+                <action android:name="com.maary.liveinpeace.action.CANCEL" />
+                <action android:name="com.maary.liveinpeace.action.INCREMENT" />
+                <action android:name="com.maary.liveinpeace.action.DECREMENT" />
+                <action android:name="com.maary.liveinpeace.action.TOGGLE" />
+
             </intent-filter>
         </receiver>
 

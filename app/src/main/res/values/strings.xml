@@ -41,6 +41,9 @@
     <string name="welcome_description">LiveInPeace needs permissions to work.</string>
     <string name="request_permission_battery">Battery</string>
     <string name="request_permission_notification">Notification</string>
+    <string name="sleeptimer_channel">Sleep Timer</string>
+    <string name="sleeptimer_channel_description">Sleep Timer Notification</string>
+    <string name="sleep">Sleep!</string>
     <string-array name="array_volume_comment">
         <item>Shhhhhhh…</item>
         <item>Perfectly Balanced, As All Things Should Be…</item>

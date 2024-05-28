@@ -5,7 +5,6 @@ import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
-import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
@@ -61,7 +60,7 @@ class HistoryActivity : AppCompatActivity(), DeviceMapChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_history)
+        binding = ActivityHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         var pickedDate : String = LocalDate.now().toString()
