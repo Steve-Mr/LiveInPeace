@@ -8,11 +8,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -42,12 +37,10 @@ import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ENABLE_EAR_PROTECTION
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
-import com.maary.liveinpeace.Constants.Companion.PREF_NOTIFY_TEXT_SIZE
 import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import com.maary.liveinpeace.DeviceMapChangeListener
 import com.maary.liveinpeace.DeviceTimer
-import com.maary.liveinpeace.HistoryActivity
 import com.maary.liveinpeace.R
 import com.maary.liveinpeace.SleepNotification.find
 import com.maary.liveinpeace.database.Connection
@@ -197,7 +190,7 @@ class ForegroundService: Service() {
                     )
                 ) { return@forEach }
                 val deviceName = deviceInfo.productName.toString().trim()
-                if (deviceName == android.os.Build.MODEL) return@forEach
+                if (deviceName == Build.MODEL) return@forEach
                 Log.v("MUTE_DEVICE", deviceName)
                 Log.v("MUTE_TYPE", deviceInfo.type.toString())
                 deviceMap[deviceName] = Connection(
@@ -410,17 +403,6 @@ class ForegroundService: Service() {
             protectionPendingIntent
         ).build()
 
-//        val historyIntent = Intent(this, HistoryActivity::class.java)
-//        historyIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-//
-//        val pendingHistoryIntent = PendingIntent.getActivity(context, 0, historyIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-//
-//        val actionHistory: NotificationCompat.Action = NotificationCompat.Action.Builder(
-//            R.drawable.ic_action_history,
-//            resources.getString(R.string.history),
-//            pendingHistoryIntent
-//        ).build()
-
         val sleepIntent = Intent(context, MuteMediaReceiver::class.java)
         sleepIntent.action = BROADCAST_ACTION_SLEEPTIMER_TOGGLE
         val pendingSleepIntent = PendingIntent.getBroadcast(context, 0, sleepIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -452,7 +434,6 @@ class ForegroundService: Service() {
             .setContentIntent(pendingMuteIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
-//            .addAction(actionHistory)
             .addAction(actionSleepTimer)
             .addAction(actionProtection)
             .setGroup(ID_NOTIFICATION_GROUP_FORE)
@@ -470,63 +451,13 @@ class ForegroundService: Service() {
             .build()
     }
 
-    private val textBounds = Rect()
-
+    @SuppressLint("DiscouragedApi")
     private fun generateNotificationIcon(context: Context, iconMode: Int): IconCompat {
-        var currentVolume = getVolumePercentage(context)
+        val currentVolume = getVolumePercentage(context)
         val currentVolumeLevel = getVolumeLevel(currentVolume)
         if (iconMode == MODE_NUM) {
-
-            val iconSize =
-                resources.getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
-            val background = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888)
-
-            val sharedPref = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
-            val textSizePref = sharedPref.getFloat(
-                PREF_NOTIFY_TEXT_SIZE, 0.0f
-            )
-
-            val paint = Paint().apply {
-                color = Color.WHITE
-                typeface = context.resources.getFont(R.font.ndot_45)
-                isFakeBoldText = true
-                isAntiAlias = true
-            }
-
-            val canvas = Canvas(background)
-            val canvasWidth = canvas.width
-            val canvasHeight = canvas.height
-
-            if (textSizePref == 0.0f) {
-
-                paint.getTextBounds(99.toString(), 0, 99.toString().length, textBounds)
-                val textWidth = textBounds.width()
-                val textHeight = textBounds.height()
-                val textSize = (canvasWidth / textWidth * textHeight).coerceAtMost(canvasHeight)
-                paint.textSize = textSize.toFloat()
-                with(sharedPref.edit()) {
-                    putFloat(PREF_NOTIFY_TEXT_SIZE, textSize.toFloat())
-                }
-            } else {
-                paint.textSize = textSizePref
-            }
-
-            var textToDraw = currentVolume.toString()
-            if (currentVolume == 100) {
-                currentVolume--
-                textToDraw = "!!"
-            }
-            paint.getTextBounds(
-                currentVolume.toString(), 0,
-                currentVolume.toString().length, textBounds)
-            canvas.drawText(
-                textToDraw,
-                (canvasWidth - textBounds.width()) / 2f,
-                (canvasHeight + textBounds.height()) / 2f,
-                paint
-            )
-
-            return IconCompat.createWithBitmap(background)
+            val resourceId = resources.getIdentifier("num_$currentVolume", "drawable", context.packageName)
+            return IconCompat.createWithResource(this, resourceId)
         }
         else {
             return IconCompat.createWithResource(context, volumeDrawableIds[currentVolumeLevel])
