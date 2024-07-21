@@ -140,8 +140,8 @@ class ForegroundService: Service() {
         override fun updateNotification(context: Context) {
             with(NotificationManagerCompat.from(applicationContext)){
                 notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
-            }        }
-
+            }
+        }
     }
 
     private fun saveDataWhenStop(){
