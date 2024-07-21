@@ -3,6 +3,7 @@ package com.maary.liveinpeace
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
@@ -10,16 +11,19 @@ import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_CANCEL
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_DECREMENT
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_INCREMENT
-import java.text.DateFormat
-import java.util.Date
-import java.util.concurrent.TimeUnit
-import com.maary.liveinpeace.SleepNotification.Action.CANCEL
-import com.maary.liveinpeace.SleepNotification.Action.INCREMENT
-import com.maary.liveinpeace.SleepNotification.Action.DECREMENT
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_YABN_MUTE
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SLEEPTIMER
+import com.maary.liveinpeace.Constants.Companion.YABN_MUTE_RECEIVER
+import com.maary.liveinpeace.Constants.Companion.YABN_PACKAGE_NAME
+import com.maary.liveinpeace.SleepNotification.Action.CANCEL
+import com.maary.liveinpeace.SleepNotification.Action.DECREMENT
+import com.maary.liveinpeace.SleepNotification.Action.INCREMENT
 import com.maary.liveinpeace.receiver.MuteMediaReceiver
+import java.text.DateFormat
+import java.util.Date
+import java.util.concurrent.TimeUnit
 
 
 object SleepNotification {
@@ -75,6 +79,16 @@ object SleepNotification {
     private fun Context.show(timeout: Long = TIMEOUT_INITIAL_MILLIS) {
         require(timeout > 0)
         val eta = System.currentTimeMillis() + timeout
+
+        val muteYABNIntent = Intent()
+        muteYABNIntent.setComponent(
+            ComponentName(
+                YABN_PACKAGE_NAME,
+                YABN_MUTE_RECEIVER
+            )
+        )
+        muteYABNIntent.action = BROADCAST_ACTION_YABN_MUTE
+        sendBroadcast(muteYABNIntent)
 
         val muteMediaIntent = Intent(this, MuteMediaReceiver::class.java)
         muteMediaIntent.action = BROADCAST_ACTION_MUTE
