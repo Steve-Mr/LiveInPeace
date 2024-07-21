@@ -43,6 +43,7 @@ class Constants {
         const val BROADCAST_ACTION_SLEEPTIMER_DECREMENT = "com.maary.liveinpeace.action.DECREMENT"
         const val BROADCAST_ACTION_SLEEPTIMER_TOGGLE = "com.maary.liveinpeace.sleeptimer.TOGGLE"
         const val BROADCAST_ACTION_SLEEPTIMER_UPDATE = "com.maary.liveinpeace.sleeptimer.UPDATE"
+        const val BROADCAST_ACTION_YABN_MUTE = "com.maary.yetanotherbatterynotifier.receiver.SettingsReceiver.dnd"
         // 前台服务状态改变广播
         const val BROADCAST_ACTION_FOREGROUND = "com.maary.liveinpeace.ACTION_FOREGROUND_SERVICE_STATE"
         const val BROADCAST_FOREGROUND_INTENT_EXTRA = "isForegroundServiceRunning"
@@ -67,5 +68,8 @@ class Constants {
         const val ID_NOTIFICATION_GROUP_SLEEPTIMER = "LIP_notification_group_sleeptimer"
         const val PATTERN_DATE_DATABASE = "yyyy-MM-dd"
         const val PATTERN_DATE_BUTTON = "MM/dd"
+
+        const val YABN_PACKAGE_NAME = "com.maary.yetanotherbatterynotifier"
+        const val YABN_MUTE_RECEIVER = "com.maary.yetanotherbatterynotifier.receiver.SettingsReceiver"
     }
 }
