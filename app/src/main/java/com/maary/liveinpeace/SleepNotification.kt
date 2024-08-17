@@ -94,7 +94,6 @@ object SleepNotification {
         muteMediaIntent.action = BROADCAST_ACTION_MUTE
         val pendingMuteIntent = PendingIntent.getBroadcast(this, 0, muteMediaIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
-
         val notification = Notification.Builder(this, CHANNEL_ID_SLEEPTIMER)
             .setCategory(Notification.CATEGORY_EVENT)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
