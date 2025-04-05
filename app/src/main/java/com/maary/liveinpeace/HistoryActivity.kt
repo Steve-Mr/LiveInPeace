@@ -48,8 +48,6 @@ class HistoryActivity : AppCompatActivity() {
         super.onResume()
         // Register the receiver
         registerConnectionsUpdateReceiver()
-        // Remove old listener registration
-        // ForegroundService.addDeviceMapChangeListener(this)
     }
 
     override fun onPause() {
@@ -57,8 +55,6 @@ class HistoryActivity : AppCompatActivity() {
         // Unregister the receiver
         unregisterReceiver(connectionsUpdateReceiver)
         connectionsUpdateReceiver = null // Allow garbage collection
-        // Remove old listener removal
-        // ForegroundService.removeDeviceMapChangeListener(this)
     }
 
     // Calculates duration for currently connected items based on their connect time

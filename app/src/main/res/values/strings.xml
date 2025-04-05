@@ -51,4 +51,5 @@
         <item>Is that ASMR pleasing?</item>
         <item>Let\'s ROCK</item>
     </string-array>
+    <string name="title_activity_main">MainActivity</string>
 </resources>
