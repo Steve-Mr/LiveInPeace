@@ -9,7 +9,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences // Import SharedPreferences
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
@@ -21,21 +21,20 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.edit // Import SharedPreferences edit extension
+import androidx.core.content.edit
 import androidx.core.graphics.drawable.IconCompat
-import com.maary.liveinpeace.Constants // Keep using Constants
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT
 import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_CONNECTIONS_UPDATE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_CONNECTIONS_UPDATE // New Action
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_TOGGLE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_UPDATE
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
-import com.maary.liveinpeace.Constants.Companion.EXTRA_CONNECTIONS_LIST // New Extra Key
+import com.maary.liveinpeace.Constants.Companion.EXTRA_CONNECTIONS_LIST
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_ALERT
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_FOREGROUND
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_FORE
@@ -45,7 +44,7 @@ import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ENABLE_EAR_PROTECTION
 import com.maary.liveinpeace.Constants.Companion.PREF_ICON
-import com.maary.liveinpeace.Constants.Companion.PREF_SERVICE_RUNNING // New Pref Key
+import com.maary.liveinpeace.Constants.Companion.PREF_SERVICE_RUNNING
 import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import com.maary.liveinpeace.DeviceTimer
@@ -60,12 +59,12 @@ import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel // Import cancel
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.time.LocalDate
 import java.util.Date
-import java.util.concurrent.ConcurrentHashMap // Use ConcurrentHashMap for thread safety if needed, though access seems main-thread confined
+import java.util.concurrent.ConcurrentHashMap
 
 class ForegroundService : Service() {
 
@@ -103,7 +102,7 @@ class ForegroundService : Service() {
     }
 
 
-    private fun getVolumePercentage(context: Context): Int {
+    private fun getVolumePercentage(): Int {
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         // Avoid division by zero if maxVolume is 0
@@ -214,12 +213,12 @@ class ForegroundService : Service() {
                         var boolProtected = false
                         // Use loop with counter or check to prevent infinite loop if volume doesn't change
                         var attempts = 100 // Limit attempts
-                        while (getVolumePercentage(applicationContext) > 25 && attempts-- > 0) {
+                        while (getVolumePercentage() > 25 && attempts-- > 0) {
                             boolProtected = true
                             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
                         }
                         attempts = 100 // Reset attempts
-                        while (getVolumePercentage(applicationContext) < 10 && attempts-- > 0) {
+                        while (getVolumePercentage() < 10 && attempts-- > 0) {
                             boolProtected = true
                             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
                         }
@@ -451,7 +450,7 @@ class ForegroundService : Service() {
 
     @SuppressLint("LaunchActivityFromNotification") // If PendingIntent launches Activity
     fun createForegroundNotification(context: Context): Notification {
-        val currentVolume = getVolumePercentage(context)
+        val currentVolume = getVolumePercentage()
         val currentVolumeLevel = getVolumeLevel(currentVolume)
         // Ensure volumeComment is initialized
         val comment = if (::volumeComment.isInitialized && currentVolumeLevel < volumeComment.size) {
@@ -550,7 +549,7 @@ class ForegroundService : Service() {
 
     @SuppressLint("DiscouragedApi")
     private fun generateNotificationIcon(context: Context, iconMode: Int): IconCompat {
-        val currentVolume = getVolumePercentage(context)
+        val currentVolume = getVolumePercentage()
 
         return if (iconMode == MODE_NUM) {
             val resourceName = "num_${currentVolume}"

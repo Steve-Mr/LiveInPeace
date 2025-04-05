@@ -10,25 +10,23 @@ import android.util.Log
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat // For receiver registration
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_CONNECTIONS_UPDATE // Import new constant
-import com.maary.liveinpeace.Constants.Companion.EXTRA_CONNECTIONS_LIST      // Import new constant
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_CONNECTIONS_UPDATE
+import com.maary.liveinpeace.Constants.Companion.EXTRA_CONNECTIONS_LIST
 import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_BUTTON
 import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_DATABASE
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.databinding.ActivityHistoryBinding
-// import com.maary.liveinpeace.service.ForegroundService // No longer needed for static access
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
-import java.util.concurrent.TimeUnit // Keep TimeUnit for duration calculation
 
 
 // Remove DeviceMapChangeListener from the class declaration
@@ -87,7 +85,7 @@ class HistoryActivity : AppCompatActivity() {
 
         // Use DateTimeFormatter for LocalDate
         // Define the formatter using the pattern from Constants
-        val dbDateFormatter = DateTimeFormatter.ofPattern(Constants.Companion.PATTERN_DATE_DATABASE, Locale.getDefault())
+        val dbDateFormatter = DateTimeFormatter.ofPattern(PATTERN_DATE_DATABASE, Locale.getDefault())
         var pickedDate: String = LocalDate.now().format(dbDateFormatter) // Use the correct formatter
 
         // Makes only dates from today backward selectable.

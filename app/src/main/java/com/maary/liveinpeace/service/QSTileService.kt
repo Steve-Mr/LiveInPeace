@@ -24,8 +24,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import com.maary.liveinpeace.Constants
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
@@ -33,7 +31,6 @@ import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_WELCOME
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SETTINGS
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_WELCOME
 import com.maary.liveinpeace.Constants.Companion.PREF_WELCOME_FINISHED
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
@@ -46,7 +43,7 @@ class QSTileService: TileService() {
 
     override fun onCreate() {
         super.onCreate()
-        sharedPreferences = getSharedPreferences(Constants.SHARED_PREF, Context.MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)

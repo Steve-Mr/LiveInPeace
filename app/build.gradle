@@ -18,9 +18,9 @@ android {
     defaultConfig {
         applicationId "com.maary.liveinpeace"
         minSdk 31
-        targetSdk 34
+        targetSdk 35
         versionCode 5
-        versionName "2.3_beta"
+        versionName "2025.04.05-01"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -70,17 +70,20 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            // ...
-            def abi = output.getFilter(com.android.build.OutputFile.ABI)
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach { output ->
+            // 查找 ABI 过滤器
+            def abiFilter = output.filters.find { it.filterType == "ABI" }
+            def abi = abiFilter?.identifier
+
             def apkName = "LiveInPeace-${abi}.apk"
-            if (abi.contains("x86_64")) {
+            if (abi == "x86_64") {
                 apkName = "LiveInPeace-x64.apk"
             }
-            outputFileName = apkName
+            output.outputFileName = apkName
         }
     }
+
 
 }
 
