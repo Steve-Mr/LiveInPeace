@@ -16,6 +16,8 @@ class Constants {
         const val PREF_WATCHING_CONNECTING_TIME = "watching_connecting"
         const val PREF_ENABLE_EAR_PROTECTION = "ear_protection_enabled"
         const val PREF_WELCOME_FINISHED = "welcome_finished"
+        // SharedPreferences key for service running state
+        const val PREF_SERVICE_RUNNING = "service_running_state"
         // 设置通知 id
         const val ID_NOTIFICATION_SETTINGS = 3
         // 前台通知 id
@@ -47,6 +49,10 @@ class Constants {
         // 前台服务状态改变广播
         const val BROADCAST_ACTION_FOREGROUND = "com.maary.liveinpeace.ACTION_FOREGROUND_SERVICE_STATE"
         const val BROADCAST_FOREGROUND_INTENT_EXTRA = "isForegroundServiceRunning"
+        // Broadcast action for connection list updates
+        const val BROADCAST_ACTION_CONNECTIONS_UPDATE = "com.maary.liveinpeace.CONNECTIONS_UPDATE"
+        const val EXTRA_CONNECTIONS_LIST = "com.maary.liveinpeace.extra.CONNECTIONS_LIST"
+
         // 当音量操作动作太过频繁后等待时间
         const val REQUESTING_WAIT_MILLIS = 500
         // 不同通知频道 ID

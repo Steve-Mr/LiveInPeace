@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -40,6 +41,13 @@ import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import com.maary.liveinpeace.R
 
 class QSTileService: TileService() {
+
+    private lateinit var sharedPreferences: SharedPreferences
+
+    override fun onCreate() {
+        super.onCreate()
+        sharedPreferences = getSharedPreferences(Constants.SHARED_PREF, Context.MODE_PRIVATE)
+    }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onClick() {
@@ -134,18 +142,19 @@ class QSTileService: TileService() {
 
 
         val intent = Intent(this, ForegroundService::class.java)
+        val currentlyRunning = sharedPreferences.getBoolean(Constants.PREF_SERVICE_RUNNING, false) // Check persisted state
 
-        if (!ForegroundService.isForegroundServiceRunning()){
+        if (!currentlyRunning) {
+            Log.d("QSTileService", "onClick: Starting ForegroundService.")
             applicationContext.startForegroundService(intent)
-            tile.state = Tile.STATE_ACTIVE
-            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_one)
-            tile.label = getString(R.string.qstile_active)
-
-        }else{
+            // Optimistically update the tile, receiver will correct if needed
+            updateTileState(true)
+        } else {
+            Log.d("QSTileService", "onClick: Stopping ForegroundService.")
             applicationContext.stopService(intent)
-            tile.state = Tile.STATE_INACTIVE
-            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_off)
-            tile.label = getString(R.string.qstile_inactive)
+            // Optimistically update the tile, receiver will correct if needed
+            sharedPreferences.edit { putBoolean(Constants.PREF_SERVICE_RUNNING, false) }
+            updateTileState(false)
         }
         tile.updateTile()
     }
@@ -153,8 +162,12 @@ class QSTileService: TileService() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onStartListening() {
         super.onStartListening()
+        // Update tile based on persisted state initially
+        updateTileState(sharedPreferences.getBoolean(Constants.PREF_SERVICE_RUNNING, false))
+
         val intentFilter = IntentFilter()
-        intentFilter.addAction(BROADCAST_ACTION_FOREGROUND)
+        intentFilter.addAction(Constants.BROADCAST_ACTION_FOREGROUND)
+        // Use RECEIVER_NOT_EXPORTED for security with internal broadcasts
         registerReceiver(foregroundServiceReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
     }
 
@@ -165,27 +178,27 @@ class QSTileService: TileService() {
 
     private val foregroundServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Log.v("MUTE_QS", "TRIGGERED")
-
-            val isForegroundServiceRunning = intent.getBooleanExtra(
-                BROADCAST_FOREGROUND_INTENT_EXTRA, false)
-            // 在此处处理前台服务状态的变化
-            val tile = qsTile
-
-            if (!isForegroundServiceRunning){
-                Log.v("MUTE_QS", "NOT RUNNING")
-                tile.state = Tile.STATE_INACTIVE
-                tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_off)
-                tile.label = getString(R.string.qstile_inactive)
-                val foregroundIntent = Intent(context, ForegroundService::class.java)
-                applicationContext.startForegroundService(foregroundIntent)
-            }else{
-                tile.state = Tile.STATE_ACTIVE
-                tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_one)
-                tile.label = getString(R.string.qstile_active)
+            if (intent.action == Constants.BROADCAST_ACTION_FOREGROUND) {
+                val isRunning = intent.getBooleanExtra(Constants.BROADCAST_FOREGROUND_INTENT_EXTRA, false)
+                Log.d("QSTileService", "Received foreground service state update: isRunning=$isRunning")
+                updateTileState(isRunning)
             }
-            tile.updateTile()
         }
+    }
+
+    private fun updateTileState(isRunning: Boolean) {
+        val tile = qsTile ?: return // Tile might be null if called before ready
+
+        if (isRunning) {
+            tile.state = Tile.STATE_ACTIVE
+            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_one) // Active icon
+            tile.label = getString(R.string.qstile_active)
+        } else {
+            tile.state = Tile.STATE_INACTIVE
+            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_off) // Inactive icon
+            tile.label = getString(R.string.qstile_inactive)
+        }
+        tile.updateTile()
     }
 
     private fun createNotificationChannel(importance:Int, id: String ,name:String, descriptionText: String) {

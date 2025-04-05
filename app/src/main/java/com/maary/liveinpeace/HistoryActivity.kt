@@ -1,60 +1,82 @@
 package com.maary.liveinpeace
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat // For receiver registration
 import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_CONNECTIONS_UPDATE // Import new constant
+import com.maary.liveinpeace.Constants.Companion.EXTRA_CONNECTIONS_LIST      // Import new constant
 import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_BUTTON
 import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_DATABASE
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.databinding.ActivityHistoryBinding
-import com.maary.liveinpeace.service.ForegroundService
+// import com.maary.liveinpeace.service.ForegroundService // No longer needed for static access
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
+import java.util.concurrent.TimeUnit // Keep TimeUnit for duration calculation
 
 
-class HistoryActivity : AppCompatActivity(), DeviceMapChangeListener {
+// Remove DeviceMapChangeListener from the class declaration
+class HistoryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHistoryBinding
     private val connectionViewModel: ConnectionViewModel by viewModels {
         ConnectionViewModelFactory((application as ConnectionsApplication).repository)
     }
+    // Adapter for currently connected devices
     private val currentAdapter = ConnectionListAdapter()
+    // Adapter for historical connections (from ViewModel)
+    private val historyAdapter = ConnectionListAdapter() // Use a separate adapter instance
+
+    // Declare the BroadcastReceiver
+    private var connectionsUpdateReceiver: BroadcastReceiver? = null
 
     override fun onResume() {
         super.onResume()
-        ForegroundService.addDeviceMapChangeListener(this)
+        // Register the receiver
+        registerConnectionsUpdateReceiver()
+        // Remove old listener registration
+        // ForegroundService.addDeviceMapChangeListener(this)
     }
 
     override fun onPause() {
         super.onPause()
-        ForegroundService.removeDeviceMapChangeListener(this)
+        // Unregister the receiver
+        unregisterReceiver(connectionsUpdateReceiver)
+        connectionsUpdateReceiver = null // Allow garbage collection
+        // Remove old listener removal
+        // ForegroundService.removeDeviceMapChangeListener(this)
     }
 
-    private fun currentConnectionsDuration(currentList: MutableList<Connection>) : MutableList<Connection>{
+    // Calculates duration for currently connected items based on their connect time
+    private fun calculateCurrentConnectionsDuration(currentList: List<Connection>): List<Connection> {
         val now = System.currentTimeMillis()
-
-        for ( (index, connection) in currentList.withIndex()){
-            val connectedTime = connection.connectedTime
-            val duration = now - connectedTime!!
-            currentList[index] = Connection(
-                name = connection.name,
-                type = connection.type,
-                connectedTime = connection.connectedTime,
-                disconnectedTime = null,
-                duration = duration,
-                date = connection.date
-            )
+        return currentList.map { connection ->
+            if (connection.connectedTime != null && connection.disconnectedTime == null) {
+                val duration = now - connection.connectedTime
+                // Create a new Connection object with updated duration
+                // Ensure other fields are copied correctly. Using copy() is ideal.
+                connection.copy(duration = duration) // Use copy for data classes
+            } else {
+                // If already disconnected or no connectedTime, return as is
+                connection
+            }
         }
-
-        return currentList
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,11 +85,12 @@ class HistoryActivity : AppCompatActivity(), DeviceMapChangeListener {
         binding = ActivityHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        var pickedDate : String = LocalDate.now().toString()
+        // Use DateTimeFormatter for LocalDate
+        // Define the formatter using the pattern from Constants
+        val dbDateFormatter = DateTimeFormatter.ofPattern(Constants.Companion.PATTERN_DATE_DATABASE, Locale.getDefault())
+        var pickedDate: String = LocalDate.now().format(dbDateFormatter) // Use the correct formatter
 
-        val connectionAdapter = ConnectionListAdapter()
-
-        // Makes only dates from today forward selectable.
+        // Makes only dates from today backward selectable.
         val constraintsBuilder =
             CalendarConstraints.Builder()
                 .setValidator(DateValidatorPointBackward.now())
@@ -79,30 +102,32 @@ class HistoryActivity : AppCompatActivity(), DeviceMapChangeListener {
                 .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
                 .build()
 
-        fun updateHistoryList(checkedId: Int){
-            if (checkedId == R.id.button_timeline) {
-                connectionViewModel.getAllConnectionsOnDate(pickedDate).observe(this) { connections ->
-                    connections.let { connectionAdapter.submitList(it) }
-                }
+        // Function to update the historical list based on ViewModel
+        fun updateHistoryList(checkedId: Int) {
+            val listToObserve = if (checkedId == R.id.button_timeline) {
+                connectionViewModel.getAllConnectionsOnDate(pickedDate)
+            } else { // R.id.button_summary
+                connectionViewModel.getSummaryOnDate(pickedDate)
             }
-            if (checkedId == R.id.button_summary) {
-                connectionViewModel.getSummaryOnDate(pickedDate).observe(this) { connections ->
-                    connections.let { connectionAdapter.submitList(it) }
-                }
+            listToObserve.observe(this) { connections ->
+                connections?.let { historyAdapter.submitList(it) }
             }
-            updateCurrentAdapter()
+            // Note: updateCurrentAdapter() is now called by the broadcast receiver,
+            // so it's removed from here unless you need to clear it on date change.
         }
 
-        fun changeDate(dateInMilli: Long?){
-            if (dateInMilli == null) return changeDate(System.currentTimeMillis())
-            binding.buttonCalendar.text = formatMillisecondsToDate(dateInMilli, PATTERN_DATE_BUTTON)
-            pickedDate = formatMillisecondsToDate(dateInMilli, PATTERN_DATE_DATABASE)
+        fun changeDate(dateInMilli: Long?) {
+            val effectiveDateInMillis = dateInMilli ?: System.currentTimeMillis() // Use current time if null
+            binding.buttonCalendar.text = formatMillisecondsToDate(effectiveDateInMillis, PATTERN_DATE_BUTTON)
+            pickedDate = formatMillisecondsToDate(effectiveDateInMillis, PATTERN_DATE_DATABASE)
             updateHistoryList(binding.toggleHistory.checkedButtonId)
-            updateCurrentAdapter()
+            // Optionally clear the current list when date changes, or let the broadcast handle it
+            // updateCurrentConnectionsView(emptyList()) // Example: Clear current list
         }
 
+        // Setup historical RecyclerView
         binding.historyList.isNestedScrollingEnabled = false
-        binding.historyList.adapter = connectionAdapter
+        binding.historyList.adapter = historyAdapter
         binding.historyList.layoutManager = LinearLayoutManager(this)
 
         binding.toggleHistory.check(R.id.button_timeline)
@@ -117,8 +142,9 @@ class HistoryActivity : AppCompatActivity(), DeviceMapChangeListener {
             datePicker.show(supportFragmentManager, "MATERIAL_DATE_PICKER")
         }
 
-        binding.buttonCalendar.setOnLongClickListener{
+        binding.buttonCalendar.setOnLongClickListener {
             changeDate(System.currentTimeMillis())
+            // Rebuild date picker if needed, or just reset selection
             datePicker = MaterialDatePicker.Builder.datePicker()
                 .setTitleText(R.string.select_date)
                 .setCalendarConstraints(constraintsBuilder.build())
@@ -127,50 +153,72 @@ class HistoryActivity : AppCompatActivity(), DeviceMapChangeListener {
             true
         }
 
+        // Setup current connections RecyclerView
         binding.currentList.isNestedScrollingEnabled = false
         binding.currentList.adapter = currentAdapter
         binding.currentList.layoutManager = LinearLayoutManager(this)
 
-        updateCurrentAdapter()
+        // Initial state for the current list view
+        updateCurrentConnectionsView(emptyList()) // Start with empty, wait for broadcast
 
-        connectionViewModel.getAllConnectionsOnDate(pickedDate).observe(this) { connections ->
-            connections.let { connectionAdapter.submitList(it) }
-        }
+        // Initial load for history list
+        updateHistoryList(binding.toggleHistory.checkedButtonId)
 
+        // Listener for history view toggle (Timeline vs Summary)
         binding.toggleHistory.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            updateHistoryList(checkedId)
+            if (isChecked) { // Only react when a button becomes checked
+                updateHistoryList(checkedId)
+            }
         }
 
-        datePicker.addOnPositiveButtonClickListener {
-            changeDate(datePicker.selection)
+        // Listener for Date Picker confirmation
+        datePicker.addOnPositiveButtonClickListener { selection ->
+            changeDate(selection) // selection should be Long?
         }
     }
 
-    private fun updateCurrentAdapter(){
-        currentAdapter.submitList(currentConnectionsDuration(ForegroundService.getConnections()))
-        if (currentAdapter.itemCount == 0){
-            binding.titleCurrent.visibility = View.GONE
-        }else{
-            binding.titleCurrent.visibility = View.VISIBLE
-        }
-    }
-
-    override fun onDeviceMapChanged(deviceMap: Map<String, Connection>) {
-        if (deviceMap.isEmpty()){
-            binding.titleCurrent.visibility = View.GONE
-        }else{
-            binding.titleCurrent.visibility = View.VISIBLE
-        }
-        currentAdapter.submitList(currentConnectionsDuration(deviceMap.values.toMutableList()))
+    // Renamed and modified function to update the 'current' list RecyclerView
+    private fun updateCurrentConnectionsView(connections: List<Connection>) {
+        val processedList = calculateCurrentConnectionsDuration(connections)
+        currentAdapter.submitList(processedList)
+        // Control visibility of the "Currently Connected" title
+        binding.titleCurrent.visibility = if (processedList.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun formatMillisecondsToDate(milliseconds: Long?, pattern: String): String {
+        // Default to now if milliseconds is null
+        val millis = milliseconds ?: System.currentTimeMillis()
         val dateFormat = SimpleDateFormat(pattern, Locale.getDefault())
         val calendar = Calendar.getInstance()
-        if (milliseconds != null) {
-            calendar.timeInMillis = milliseconds
-        }
+        calendar.timeInMillis = millis
         return dateFormat.format(calendar.time)
+    }
+
+    // --- BroadcastReceiver Implementation ---
+
+    private fun registerConnectionsUpdateReceiver() {
+        if (connectionsUpdateReceiver == null) {
+            connectionsUpdateReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    if (intent.action == BROADCAST_ACTION_CONNECTIONS_UPDATE) {
+                        val connectionsList: ArrayList<Connection>? =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                intent.getParcelableArrayListExtra(EXTRA_CONNECTIONS_LIST, Connection::class.java)
+                            } else {
+                                @Suppress("DEPRECATION")
+                                intent.getParcelableArrayListExtra(EXTRA_CONNECTIONS_LIST)
+                            }
+
+                        Log.d("HistoryActivity", "Received connection update: ${connectionsList?.size ?: 0} items")
+                        // Update the UI with the received list, handle null case
+                        updateCurrentConnectionsView(connectionsList ?: emptyList())
+                    }
+                }
+            }
+            val filter = IntentFilter(BROADCAST_ACTION_CONNECTIONS_UPDATE)
+            // Use ContextCompat for compatibility and specifying receiver export behavior
+            ContextCompat.registerReceiver(this, connectionsUpdateReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+            Log.d("HistoryActivity", "ConnectionsUpdateReceiver registered")
+        }
     }
 }
