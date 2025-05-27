@@ -18,6 +18,7 @@ class Constants {
         const val PREF_WELCOME_FINISHED = "welcome_finished"
         // SharedPreferences key for service running state
         const val PREF_SERVICE_RUNNING = "service_running_state"
+        const val PREF_HIDE_IN_LAUNCHER = "hide_in_launcher"
         // 设置通知 id
         const val ID_NOTIFICATION_SETTINGS = 3
         // 前台通知 id

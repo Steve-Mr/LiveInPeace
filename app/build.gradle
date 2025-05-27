@@ -5,6 +5,7 @@ plugins {
     id 'com.google.devtools.ksp'
     id 'kotlin-parcelize'
     id 'org.jetbrains.kotlin.plugin.compose'
+    id 'com.google.dagger.hilt.android'
 }
 
 def keystorePropertiesFile = rootProject.file("key.properties")
@@ -110,7 +111,6 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
-
     def lifecycle_version = '2.8.7'
 
     // LiveData
@@ -119,6 +119,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycle_version"
 
+    implementation "com.google.dagger:hilt-android:2.56.1"
+    ksp "com.google.dagger:hilt-compiler:2.56.1"
 
     def room_version = '2.7.1'
 
