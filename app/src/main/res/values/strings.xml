@@ -52,4 +52,10 @@
         <item>Let\'s ROCK</item>
     </string-array>
     <string name="title_activity_main">MainActivity</string>
+    <string name="icon_type">Notification Icon Type</string>
+    <string name="icon_type_description">Choose notification icon type from percent and image.</string>
+    <string name="notification_settings">Notification Settings</string>
+    <string name="notification_settings_description">Configure notification importance</string>
+    <string name="exit">Exit</string>
+    <string name="hide_in_launcher">Hide In Launcher</string>
 </resources>
