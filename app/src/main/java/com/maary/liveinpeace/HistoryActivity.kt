@@ -36,7 +36,7 @@ class HistoryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHistoryBinding
     private val connectionViewModel: ConnectionViewModel by viewModels {
-        ConnectionViewModelFactory((application as ConnectionsApplication).repository)
+        ConnectionViewModelFactory((application as LiveInPeaceApplication).repository)
     }
     // Adapter for currently connected devices
     private val currentAdapter = ConnectionListAdapter()

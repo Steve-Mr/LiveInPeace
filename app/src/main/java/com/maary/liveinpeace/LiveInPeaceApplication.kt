@@ -4,19 +4,26 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.google.android.material.color.DynamicColors
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_WELCOME
+import com.maary.liveinpeace.database.ConnectionRepository
+import com.maary.liveinpeace.database.ConnectionRoomDatabase
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class LiveInPeaceApplication: Application() {
 
+    val database by lazy { ConnectionRoomDatabase.getDatabase(this) }
+    val repository by lazy { ConnectionRepository(database.connectionDao()) }
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+        DynamicColors.applyToActivitiesIfAvailable(this)
     }
 
     private fun createNotificationChannels() {
