@@ -17,6 +17,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -54,8 +55,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -182,224 +183,253 @@ class ForegroundService : Service() {
     }
 
     private val audioDeviceCallback = object : AudioDeviceCallback() {
+
+        // 使用伴生对象管理常量，消除魔法数字
+        private val TAG = "AudioDeviceCallback"
+        private val EAR_PROTECTION_LOWER_THRESHOLD = 10
+        private val EAR_PROTECTION_UPPER_THRESHOLD = 25
+        private val VOLUME_ADJUST_ATTEMPTS = 100
+
+        // 将需要忽略的设备类型定义为常量集合，方便管理
+        private val IGNORED_DEVICE_TYPES = setOf(
+            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
+            AudioDeviceInfo.TYPE_BUILTIN_MIC,
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
+            AudioDeviceInfo.TYPE_FM_TUNER,
+            AudioDeviceInfo.TYPE_REMOTE_SUBMIX,
+            AudioDeviceInfo.TYPE_TELEPHONY,
+            28 // TODO: 为这个值定义一个有意义的常量名，例如 TYPE_CUSTOM_DEVICE
+        )
+
+        /**
+         * 当新的音频设备被添加（连接）时调用。
+         */
         @SuppressLint("MissingPermission")
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
-
-            val connectedTime = System.currentTimeMillis()
-            var deviceAdded = false
+            if (addedDevices.isNullOrEmpty()) return
 
             serviceScope.launch {
+                // 在循环外一次性获取配置，避免重复读取
+                val isWatchingEnabled = preferenceRepository.getWatchingState().first()
+                val isEarProtectionOn = preferenceRepository.isEarProtectionOn().first()
+                var hasChanges = false // 标志位，用于判断是否需要更新UI
 
-                addedDevices?.forEach { deviceInfo ->
-                    if (deviceInfo.type in listOf(
-                            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
-                            AudioDeviceInfo.TYPE_BUILTIN_MIC,
-                            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
-                            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
-                            AudioDeviceInfo.TYPE_FM_TUNER,
-                            AudioDeviceInfo.TYPE_REMOTE_SUBMIX,
-                            AudioDeviceInfo.TYPE_TELEPHONY,
-                            28, // Consider defining this constant if it's meaningful
-                        )
-                    ) {
-                        return@forEach
-                    }
+                addedDevices.forEach { deviceInfo ->
+                    // 使用辅助函数进行判断，使逻辑更清晰
+                    if (isIgnoredDevice(deviceInfo)) return@forEach
 
-                    val deviceName = deviceInfo.productName?.toString()?.trim()
-                        ?: "Unknown Device ${deviceInfo.id}" // Handle null productName
-                    if (deviceName == Build.MODEL || deviceName.isBlank()) return@forEach // Skip self or blank names
+                    val deviceName = getDeviceName(deviceInfo) ?: return@forEach
+                    if (deviceName == Build.MODEL) return@forEach // 忽略本机设备
 
-                    Log.v("MUTE_DEVICE", "Device Added: $deviceName (Type: ${deviceInfo.type})")
-
-                    deviceMapMutex.withLock {
-                        // Add to instance map
-                        if (!deviceMap.containsKey(deviceName)) {
-                            deviceMap[deviceName] = Connection(
-                                name = deviceName,
-                                type = deviceInfo.type,
-                                connectedTime = connectedTime,
-                                disconnectedTime = null,
-                                duration = null,
-                                date = LocalDate.now().toString()
-                            )
-                            deviceAdded = true
-
-                            // Start timer only if watching is enabled
-                            if (preferenceRepository.getWatchingState().first()) {
-                                Log.v("MUTE_DEVICEMAP", "Starting timer for $deviceName")
-                                val deviceTimer = DeviceTimer(
-                                    context = applicationContext,
-                                    deviceName = deviceName
-                                )
-                                deviceTimer.start()
-                                deviceTimerMap[deviceName] = deviceTimer
-                            }
-                        }
-                    }
-
-                    // Ear Protection Logic
-                    if (preferenceRepository.isEarProtectionOn().first()) {
-                        val protectionJob = serviceScope.launch {
-                            try {
-                                var boolProtected = false
-                                // Use loop with counter or check to prevent infinite loop if volume doesn't change
-                                var attempts = 100 // Limit attempts
-                                while (getVolumePercentage() > 25 && attempts-- > 0) {
-                                    ensureActive()
-                                    boolProtected = true
-                                    audioManager.adjustStreamVolume(
-                                        AudioManager.STREAM_MUSIC,
-                                        AudioManager.ADJUST_LOWER,
-                                        0
-                                    )
-                                }
-                                attempts = 100 // Reset attempts
-                                while (getVolumePercentage() < 10 && attempts-- > 0) {
-                                    ensureActive()
-                                    boolProtected = true
-                                    audioManager.adjustStreamVolume(
-                                        AudioManager.STREAM_MUSIC,
-                                        AudioManager.ADJUST_RAISE,
-                                        0
-                                    )
-                                }
-                                if (boolProtected) {
-                                    Log.d(
-                                        "ForegroundService",
-                                        "Ear protection applied for $deviceName"
-                                    )
-                                    NotificationManagerCompat.from(applicationContext).apply {
-                                        notify(
-                                            ID_NOTIFICATION_PROTECT,
-                                            createProtectionNotification()
-                                        )
-                                    }
-                                }
-
-                            } catch (e: kotlinx.coroutines.CancellationException) {
-                                // 协程被取消时会进入这里
-                                Log.d("ProtectionLogic", "Protection for ${deviceInfo.address} was cancelled.")
-                            } finally {
-                                // 任务完成后（无论成功或取消），从 Map 中移除
-                                protectionJobs.remove(deviceInfo.address)
-                            }
-                        }
-
-                        protectionJobs[deviceInfo.address] = protectionJob
-                    }
-
-                    if (deviceAdded) {
-                        Log.v("MUTE_MAP", "Device map updated: ${deviceMap.keys}")
-                        // Broadcast the updated list
-                        broadcastConnectionsUpdate()
-                        // Update the foreground notification
-                        NotificationManagerCompat.from(applicationContext).apply {
-                            notify(
-                                ID_NOTIFICATION_FOREGROUND,
-                                createForegroundNotification(applicationContext)
-                            )
+                    // 处理设备添加的核心逻辑
+                    val wasAdded = processNewDevice(deviceInfo, deviceName, isWatchingEnabled)
+                    if (wasAdded) {
+                        hasChanges = true
+                        // 如果开启了护耳模式，则应用
+                        if (isEarProtectionOn) {
+                            applyEarProtection(deviceName)
                         }
                     }
                 }
-            }
 
+                // 在所有设备处理完毕后，如果发生了变化，则统一更新UI和通知
+                if (hasChanges) {
+                    Log.d(TAG, "Device map updated due to additions: ${deviceMap.keys}")
+                    updateUiAndNotifications()
+                }
+            }
         }
 
+        /**
+         * 当音频设备被移除（断开）时调用。
+         */
         @SuppressLint("MissingPermission")
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
-            var deviceRemoved = false
+            if (removedDevices.isNullOrEmpty()) return
 
             serviceScope.launch {
+                var hasChanges = false
 
-                removedDevices?.forEach { deviceInfo ->
-                    val deviceName = deviceInfo.productName?.toString()?.trim()
-                        ?: return@forEach // Skip if no name
-                    val disconnectedTime = System.currentTimeMillis()
-                    var connectionsToSave: Connection? = null
+                removedDevices.forEach { deviceInfo ->
+                    val deviceName = getDeviceName(deviceInfo) ?: return@forEach
 
-                    protectionJobs[deviceInfo.address]?.let {
-                        Log.d("ProtectionLogic", "Device ${deviceInfo.address} disconnected. Cancelling job.")
-                        it.cancel()
+                    // 取消与该设备相关的护耳任务
+                    protectionJobs.remove(deviceName)?.cancel()
+
+                    // 处理设备移除的核心逻辑
+                    val connectionToSave = processRemovedDevice(deviceName)
+                    if (connectionToSave != null) {
+                        hasChanges = true
+                        saveConnectionToDatabase(connectionToSave)
                     }
+                }
 
-                    deviceMapMutex.withLock {
-                        if (deviceMap.containsKey(deviceName)) {
-                            deviceRemoved = true
-                            val connection =
-                                deviceMap.remove(deviceName) // Remove from instance map
-                            deviceTimerMap.remove(deviceName)?.stop()
-
-                            Log.v(
-                                "MUTE_DEVICE",
-                                "Device Removed: $deviceName (Type: ${deviceInfo.type})"
-                            )
-
-                            if (connection?.connectedTime != null) {
-                                val connectionTime = disconnectedTime - connection.connectedTime
-
-                                connectionsToSave = Connection(
-                                    name = connection.name,
-                                    type = connection.type,
-                                    connectedTime = connection.connectedTime,
-                                    disconnectedTime = disconnectedTime,
-                                    duration = connectionTime,
-                                    date = connection.date
-                                )
-
-                                // Cancel alert notification if connection was long
-                                if (connectionTime > ALERT_TIME) {
-                                    val notificationManager: NotificationManager =
-                                        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                                    notificationManager.cancel(ID_NOTIFICATION_ALERT)
-                                }
-
-                            }
-
-                            // Stop and remove timer if watching is enabled
-                            if (preferenceRepository.getWatchingState().first()) {
-                                deviceTimerMap.remove(deviceName)?.let {
-                                    Log.v("MUTE_DEVICEMAP", "Stopping timer for $deviceName")
-                                    it.stop()
-                                }
-                            }
-                        }
-                    }
-
-                    connectionsToSave?.let { conn ->
-                        try {
-                            connectionDao.insert(conn)
-                            Log.d(
-                                "ForegroundService",
-                                "Saved connection data for removed device ${conn.name}"
-                            )
-                        } catch (e: Exception) {
-                            Log.e(
-                                "ForegroundService",
-                                "Error saving connection data for ${conn.name}",
-                                e
-                            )
-                        }
-
-                    }
-
-                    if (deviceRemoved) {
-                        Log.v("MUTE_MAP", "Device map updated: ${deviceMap.keys}")
-                        // Broadcast the updated list
-                        broadcastConnectionsUpdate()
-                        // Update the foreground notification
-                        NotificationManagerCompat.from(applicationContext).apply {
-                            notify(
-                                ID_NOTIFICATION_FOREGROUND,
-                                createForegroundNotification(applicationContext)
-                            )
-                        }
-                        deviceRemoved = false
-                    }
-
+                // 在所有设备处理完毕后，如果发生了变化，则统一更新UI和通知
+                if (hasChanges) {
+                    Log.d(TAG, "Device map updated due to removals: ${deviceMap.keys}")
+                    updateUiAndNotifications()
                 }
             }
+        }
 
+        // --- 辅助函数 ---
 
+        /**
+         * 检查设备类型是否应该被忽略。
+         */
+        private fun isIgnoredDevice(deviceInfo: AudioDeviceInfo): Boolean {
+            return deviceInfo.type in IGNORED_DEVICE_TYPES
+        }
+
+        /**
+         * 获取规范化的设备名称。
+         */
+        private fun getDeviceName(deviceInfo: AudioDeviceInfo): String? {
+            val name = deviceInfo.productName?.toString()?.trim()
+            return if (name.isNullOrBlank()) null else name
+        }
+
+        /**
+         * 处理新连接的设备，更新状态并返回是否成功添加。
+         */
+        private suspend fun processNewDevice(
+            deviceInfo: AudioDeviceInfo,
+            deviceName: String,
+            isWatching: Boolean
+        ): Boolean {
+            var wasAdded = false
+            deviceMapMutex.withLock {
+                if (!deviceMap.containsKey(deviceName)) {
+                    Log.d(TAG, "Device Added: $deviceName (Type: ${deviceInfo.type})")
+                    deviceMap[deviceName] = Connection(
+                        name = deviceName,
+                        type = deviceInfo.type,
+                        connectedTime = System.currentTimeMillis(),
+                        disconnectedTime = null,
+                        duration = null,
+                        date = LocalDate.now().toString()
+                    )
+                    wasAdded = true
+
+                    if (isWatching) {
+                        Log.d(TAG, "Starting timer for $deviceName")
+                        val deviceTimer = DeviceTimer(applicationContext, deviceName)
+                        deviceTimer.start()
+                        deviceTimerMap[deviceName] = deviceTimer
+                    }
+                }
+            }
+            return wasAdded
+        }
+
+        /**
+         * 处理断开连接的设备，返回一个需要被保存到数据库的 Connection 对象。
+         */
+        private suspend fun processRemovedDevice(deviceName: String): Connection? {
+            var connectionToSave: Connection? = null
+            val disconnectedTime = System.currentTimeMillis()
+
+            deviceMapMutex.withLock {
+                // 如果设备在我们的监控列表中，则处理它
+                if (deviceMap.containsKey(deviceName)) {
+                    Log.d(TAG, "Device Removed: $deviceName")
+
+                    val connection = deviceMap.remove(deviceName)
+                    deviceTimerMap.remove(deviceName)?.stop() // 停止并移除计时器
+
+                    if (connection?.connectedTime != null) {
+                        val duration = disconnectedTime - connection.connectedTime
+                        connectionToSave = connection.copy(
+                            disconnectedTime = disconnectedTime,
+                            duration = duration
+                        )
+
+                        // 如果连接时间超过阈值，取消警报通知
+                        if (duration > ALERT_TIME) {
+                            val notificationManager =
+                                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                            notificationManager.cancel(ID_NOTIFICATION_ALERT)
+                        }
+                    }
+                }
+            }
+            return connectionToSave
+        }
+
+        /**
+         * 将连接记录保存到数据库。
+         */
+        private suspend fun saveConnectionToDatabase(connection: Connection) {
+            try {
+                connectionDao.insert(connection)
+                Log.d(TAG, "Saved connection data for ${connection.name}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving connection data for ${connection.name}", e)
+            }
+        }
+
+        /**
+         * 应用护耳逻辑，自动调整音量到安全范围。
+         */
+        @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+        private fun applyEarProtection(deviceName: String) {
+            val protectionJob = serviceScope.launch {
+                try {
+                    Log.d(TAG, "Applying ear protection for $deviceName")
+                    var protectionApplied = false
+
+                    // 降低音量
+                    var lowerAttempts = VOLUME_ADJUST_ATTEMPTS
+                    while (getVolumePercentage() > EAR_PROTECTION_UPPER_THRESHOLD && lowerAttempts-- > 0 && isActive) {
+                        audioManager.adjustStreamVolume(
+                            AudioManager.STREAM_MUSIC,
+                            AudioManager.ADJUST_LOWER,
+                            0
+                        )
+                        protectionApplied = true
+                    }
+
+                    // 升高音量
+                    var raiseAttempts = VOLUME_ADJUST_ATTEMPTS
+                    while (getVolumePercentage() < EAR_PROTECTION_LOWER_THRESHOLD && raiseAttempts-- > 0 && isActive) {
+                        audioManager.adjustStreamVolume(
+                            AudioManager.STREAM_MUSIC,
+                            AudioManager.ADJUST_RAISE,
+                            0
+                        )
+                        protectionApplied = true
+                    }
+
+                    if (protectionApplied) {
+                        Log.d(TAG, "Ear protection applied for $deviceName.")
+                        NotificationManagerCompat.from(applicationContext)
+                            .notify(ID_NOTIFICATION_PROTECT, createProtectionNotification())
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    Log.d(TAG, "Protection job for $deviceName was cancelled.")
+                } finally {
+                    // 任务完成后（无论成功或取消），从 Map 中移除
+                    protectionJobs.remove(deviceName)
+                }
+            }
+            // 使用设备名称作为 Key，更稳定
+            protectionJobs[deviceName] = protectionJob
+        }
+
+        /**
+         * 统一更新前台通知和广播。
+         */
+        @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+        private fun updateUiAndNotifications() {
+            // 广播更新
+            broadcastConnectionsUpdate()
+            // 更新前台服务通知
+            NotificationManagerCompat.from(applicationContext)
+                .notify(
+                    ID_NOTIFICATION_FOREGROUND,
+                    createForegroundNotification(applicationContext)
+                )
         }
     }
 
