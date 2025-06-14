@@ -52,61 +52,6 @@ class QSTileService: TileService() {
         val tile = qsTile
         var waitMillis = REQUESTING_WAIT_MILLIS
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_DEFAULT) == null){
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_DEFAULT,
-                resources.getString(R.string.default_channel),
-                resources.getString(R.string.default_channel_description)
-            )
-        }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_SETTINGS) == null) {
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_SETTINGS,
-                resources.getString(R.string.channel_settings),
-                resources.getString(R.string.settings_channel_description)
-            )
-        }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_ALERT) == null) {
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_HIGH,
-                CHANNEL_ID_ALERT,
-                resources.getString(R.string.channel_alert),
-                resources.getString(R.string.alert_channel_description)
-            )
-        }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_PROTECT) == null) {
-            val channel = NotificationChannel(
-                CHANNEL_ID_PROTECT,
-                resources.getString(R.string.channel_protection),
-                NotificationManager.IMPORTANCE_LOW).apply {
-                description = resources.getString(R.string.protection_channel_description)
-                enableVibration(false)
-                setSound(null, null)
-            }
-            // Register the channel with the system
-            notificationManager.createNotificationChannel(channel)
-        }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_WELCOME) == null){
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_WELCOME,
-                resources.getString(R.string.welcome_channel),
-                resources.getString(R.string.welcome_channel_description)
-            )
-        }
-
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_SLEEPTIMER) == null){
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_SLEEPTIMER,
-                resources.getString(R.string.sleeptimer_channel),
-                resources.getString(R.string.sleeptimer_channel_description)
-            )
-        }
-
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
 
         while(ActivityCompat.checkSelfPermission(
