@@ -9,7 +9,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
@@ -21,7 +20,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.edit
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT
@@ -43,29 +41,33 @@ import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_PROTECT
 import com.maary.liveinpeace.Constants.Companion.MODE_IMG
 import com.maary.liveinpeace.Constants.Companion.MODE_NUM
 import com.maary.liveinpeace.Constants.Companion.PREF_ENABLE_EAR_PROTECTION
-import com.maary.liveinpeace.Constants.Companion.PREF_ICON
 import com.maary.liveinpeace.Constants.Companion.PREF_SERVICE_RUNNING
 import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
-import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import com.maary.liveinpeace.DeviceTimer
+import com.maary.liveinpeace.MainActivity
 import com.maary.liveinpeace.R
 import com.maary.liveinpeace.SleepNotification.find
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.database.ConnectionDao
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
+import com.maary.liveinpeace.database.PreferenceRepository
 import com.maary.liveinpeace.receiver.MuteMediaReceiver
 import com.maary.liveinpeace.receiver.SettingsReceiver
 import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
+import dagger.hilt.android.AndroidEntryPoint
+import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import java.text.DateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 
+@AndroidEntryPoint
 class ForegroundService : Service() {
 
     // Use instance scope for CoroutineScope to easily cancel jobs in onDestroy
@@ -74,7 +76,9 @@ class ForegroundService : Service() {
     private lateinit var database: ConnectionRoomDatabase
     private lateinit var connectionDao: ConnectionDao
     private lateinit var audioManager: AudioManager
-    private lateinit var sharedPreferences: SharedPreferences // Instance variable for SharedPreferences
+
+    @Inject
+    lateinit var preferenceRepository: PreferenceRepository
 
     // Instance variable for device map
     private val deviceMap: MutableMap<String, Connection> = ConcurrentHashMap() // Use ConcurrentHashMap if worried about potential multi-threaded access, otherwise regular HashMap is fine.
@@ -89,8 +93,6 @@ class ForegroundService : Service() {
     )
 
     private lateinit var volumeComment: Array<String>
-
-
 
     // Method to broadcast the current connection list
     private fun broadcastConnectionsUpdate() {
@@ -208,33 +210,35 @@ class ForegroundService : Service() {
                     )
                     deviceAdded = true
 
-                    // Ear Protection Logic
-                    if (sharedPreferences.getBoolean(PREF_ENABLE_EAR_PROTECTION, false)) {
-                        var boolProtected = false
-                        // Use loop with counter or check to prevent infinite loop if volume doesn't change
-                        var attempts = 100 // Limit attempts
-                        while (getVolumePercentage() > 25 && attempts-- > 0) {
-                            boolProtected = true
-                            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
-                        }
-                        attempts = 100 // Reset attempts
-                        while (getVolumePercentage() < 10 && attempts-- > 0) {
-                            boolProtected = true
-                            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
-                        }
-                        if (boolProtected) {
-                            Log.d("ForegroundService", "Ear protection applied for $deviceName")
-                            NotificationManagerCompat.from(applicationContext).apply {
-                                notify(ID_NOTIFICATION_PROTECT, createProtectionNotification())
+                    serviceScope.launch {
+                        //todo race condition
+
+                        // Ear Protection Logic
+                        if (preferenceRepository.isEarProtectionOn().first()) {
+                            var boolProtected = false
+                            // Use loop with counter or check to prevent infinite loop if volume doesn't change
+                            var attempts = 100 // Limit attempts
+                            while (getVolumePercentage() > 25 && attempts-- > 0) {
+                                boolProtected = true
+                                audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
+                            }
+                            attempts = 100 // Reset attempts
+                            while (getVolumePercentage() < 10 && attempts-- > 0) {
+                                boolProtected = true
+                                audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
+                            }
+                            if (boolProtected) {
+                                Log.d("ForegroundService", "Ear protection applied for $deviceName")
+                                NotificationManagerCompat.from(applicationContext).apply {
+                                    notify(ID_NOTIFICATION_PROTECT, createProtectionNotification())
+                                }
                             }
                         }
-                    }
 
-                    // Start timer only if watching is enabled
-                    if (sharedPreferences.getBoolean(PREF_WATCHING_CONNECTING_TIME, false)) {
-                        if (!deviceTimerMap.containsKey(deviceName)) {
-                            val deviceTimer = DeviceTimer(context = applicationContext, deviceName = deviceName)
+                        // Start timer only if watching is enabled
+                        if (preferenceRepository.getWatchingState().first()) {
                             Log.v("MUTE_DEVICEMAP", "Starting timer for $deviceName")
+                            val deviceTimer = DeviceTimer(context = applicationContext, deviceName = deviceName)
                             deviceTimer.start()
                             deviceTimerMap[deviceName] = deviceTimer
                         }
@@ -298,10 +302,12 @@ class ForegroundService : Service() {
                     }
 
                     // Stop and remove timer if watching is enabled
-                    if (sharedPreferences.getBoolean(PREF_WATCHING_CONNECTING_TIME, false)) {
-                        deviceTimerMap.remove(deviceName)?.let {
-                            Log.v("MUTE_DEVICEMAP", "Stopping timer for $deviceName")
-                            it.stop()
+                    serviceScope.launch {
+                        if (preferenceRepository.getWatchingState().first()) {
+                            deviceTimerMap.remove(deviceName)?.let {
+                                Log.v("MUTE_DEVICEMAP", "Stopping timer for $deviceName")
+                                it.stop()
+                            }
                         }
                     }
                 }
@@ -327,8 +333,6 @@ class ForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize SharedPreferences
-        sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioManager.registerAudioDeviceCallback(audioDeviceCallback, null) // Consider using a Handler for the callback thread if needed
@@ -436,9 +440,9 @@ class ForegroundService : Service() {
 
     // Helper to update persisted state and send broadcast
     private fun setServiceRunningState(isRunning: Boolean) {
-        // Update SharedPreferences
-        sharedPreferences.edit {
-            putBoolean(PREF_SERVICE_RUNNING, isRunning)
+        // Update Preferences
+        serviceScope.launch {
+            preferenceRepository.setServiceRunning(isRunning)
         }
         // Send broadcast to notify components like QSTileService
         val intent = Intent(BROADCAST_ACTION_FOREGROUND)
@@ -458,21 +462,15 @@ class ForegroundService : Service() {
         } else {
             "Volume" // Fallback
         }
-        val iconMode = sharedPreferences.getInt(PREF_ICON, MODE_IMG)
-        val nIcon = generateNotificationIcon(context, iconMode)
+
+        val nIcon = generateNotificationIcon(context)
 
         // --- Intents for Actions ---
-        val settingsIntent = Intent(this, SettingsReceiver::class.java).apply {
+        val settingsIntent = Intent(this, MainActivity::class.java).apply {
             action = ACTION_NAME_SETTINGS
         }
         val settingsPendingIntent: PendingIntent =
             PendingIntent.getBroadcast(this, 0, settingsIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT) // Use UPDATE_CURRENT if intent extras change
-
-        val protectionIntent = Intent(this, SettingsReceiver::class.java).apply {
-            action = ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT
-        }
-        val protectionPendingIntent: PendingIntent =
-            PendingIntent.getBroadcast(this, 1, protectionIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT) // Different request code (1)
 
         val sleepIntent = Intent(context, MuteMediaReceiver::class.java).apply {
             action = BROADCAST_ACTION_SLEEPTIMER_TOGGLE
@@ -483,11 +481,6 @@ class ForegroundService : Service() {
             action = BROADCAST_ACTION_MUTE
         }
         val pendingMuteIntent = PendingIntent.getBroadcast(context, 3, muteMediaIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT) // Different request code (3)
-
-
-        // --- Determine Action Titles ---
-        val protectionEnabled = sharedPreferences.getBoolean(PREF_ENABLE_EAR_PROTECTION, false)
-        val protectionActionTitle = if (protectionEnabled) R.string.dont_protect else R.string.protection
 
         val sleepNotification = find() // From SleepNotification object
         val sleepTitle = if (sleepNotification != null) {
@@ -501,12 +494,6 @@ class ForegroundService : Service() {
             R.drawable.ic_baseline_settings_24,
             resources.getString(R.string.settings),
             settingsPendingIntent
-        ).build()
-
-        val actionProtection : NotificationCompat.Action = NotificationCompat.Action.Builder(
-            R.drawable.ic_headphones_protection,
-            resources.getString(protectionActionTitle),
-            protectionPendingIntent
         ).build()
 
         val actionSleepTimer: NotificationCompat.Action = NotificationCompat.Action.Builder (
@@ -530,7 +517,6 @@ class ForegroundService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(actionSettings)
             .addAction(actionSleepTimer)
-            .addAction(actionProtection)
             .setGroup(ID_NOTIFICATION_GROUP_FORE)
             .setGroupSummary(false)
             .build()
@@ -548,16 +534,13 @@ class ForegroundService : Service() {
     }
 
     @SuppressLint("DiscouragedApi")
-    private fun generateNotificationIcon(context: Context, iconMode: Int): IconCompat {
+    private fun generateNotificationIcon(context: Context): IconCompat {
         val currentVolume = getVolumePercentage()
 
-        return if (iconMode == MODE_NUM) {
-            val resourceName = "num_${currentVolume}"
-            val resourceId = resources.getIdentifier(resourceName, "drawable", context.packageName)
-            if (resourceId != 0) IconCompat.createWithResource(this, resourceId)
-            else IconCompat.createWithResource(context, volumeDrawableIds[getVolumeLevel(currentVolume)]) // Fallback to image mode
-        } else {
-            IconCompat.createWithResource(context, volumeDrawableIds[getVolumeLevel(currentVolume)])
-        }
+        val resourceName = "num_${currentVolume}"
+        val resourceId = resources.getIdentifier(resourceName, "drawable", context.packageName)
+        return if (resourceId != 0) IconCompat.createWithResource(this, resourceId)
+        else IconCompat.createWithResource(context, volumeDrawableIds[getVolumeLevel(currentVolume)]) // Fallback to image mode
+
     }
 }

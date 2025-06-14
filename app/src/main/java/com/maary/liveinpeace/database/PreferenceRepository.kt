@@ -34,31 +34,11 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
     private val datastore = context.datastore
 
     companion object {
-        val PREF_ICON = intPreferencesKey(Constants.PREF_ICON)
         val PREF_WATCHING_CONNECTING_TIME = booleanPreferencesKey(Constants.PREF_WATCHING_CONNECTING_TIME)
         val PREF_ENABLE_EAR_PROTECTION = booleanPreferencesKey(Constants.PREF_ENABLE_EAR_PROTECTION)
         val PREF_WELCOME_FINISHED = booleanPreferencesKey(Constants.PREF_WELCOME_FINISHED)
         val PREF_SERVICE_RUNNING = booleanPreferencesKey(Constants.PREF_SERVICE_RUNNING)
         val PREF_HIDE_IN_LAUNCHER = booleanPreferencesKey(Constants.PREF_HIDE_IN_LAUNCHER)
-    }
-
-    fun getIconState() : Flow<Int> {
-        return datastore.data.map { preferences ->
-            val iconValue = preferences[PREF_ICON]
-
-            when (iconValue) {
-                MODE_IMG -> MODE_IMG
-                MODE_NUM -> MODE_NUM
-                null -> MODE_IMG
-                else -> MODE_IMG     
-            }
-        }
-    }
-
-    suspend fun setIconState(state: Int) {
-        datastore.edit { pref ->
-            pref[PREF_ICON] = state
-        }
     }
 
     fun getWatchingState(): Flow<Boolean> {

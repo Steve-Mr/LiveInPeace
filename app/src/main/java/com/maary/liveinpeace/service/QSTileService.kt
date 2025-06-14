@@ -9,7 +9,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -22,28 +21,47 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.content.edit
 import com.maary.liveinpeace.Constants
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_WELCOME
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_WELCOME
-import com.maary.liveinpeace.Constants.Companion.PREF_WELCOME_FINISHED
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
-import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import com.maary.liveinpeace.R
+import com.maary.liveinpeace.database.PreferenceRepository
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface PreferenceQSTileEntryPoint {
+    fun preferenceRepository(): PreferenceRepository
+}
 
 class QSTileService: TileService() {
 
-    private lateinit var sharedPreferences: SharedPreferences
+    private val serviceScope = CoroutineScope( SupervisorJob() + Dispatchers.IO)
+    private lateinit var preferenceRepository: PreferenceRepository
 
     override fun onCreate() {
         super.onCreate()
-        sharedPreferences = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
+        val entryPoint = EntryPointAccessors.fromApplication(
+            applicationContext,
+            PreferenceQSTileEntryPoint::class.java
+        )
+        preferenceRepository = entryPoint.preferenceRepository()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -65,39 +83,41 @@ class QSTileService: TileService() {
             waitMillis *= 2
         }
 
-        val sharedPref = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
-        while (!sharedPref.getBoolean(PREF_WELCOME_FINISHED, false)){
-            if ( powerManager.isIgnoringBatteryOptimizations(packageName) &&
-                ActivityCompat.checkSelfPermission(
-                    applicationContext, Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED) {
-                sharedPref.edit {
-                    putBoolean(PREF_WELCOME_FINISHED, true)
+        val intent = Intent(this, ForegroundService::class.java)
+
+
+        serviceScope.launch {
+            preferenceRepository.isWelcomeFinished().collect {
+                if (!it) {
+                    //todo: redirect to welcome activity/screen
+                    if ( powerManager.isIgnoringBatteryOptimizations(packageName) &&
+                        ActivityCompat.checkSelfPermission(
+                            applicationContext, Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED) {
+                        preferenceRepository.setWelcomeFinished(true)
+                    } else {
+                        createWelcomeNotification()
+                        Thread.sleep(waitMillis.toLong())
+                        waitMillis *= 2
+                    }
                 }
-                break
+            }
+
+            if (preferenceRepository.isServiceRunning().first()) {
+                stopService(intent)
+                preferenceRepository.setServiceRunning(false)
+                updateTileState(false)
+                tile.updateTile()
+
             } else {
-                createWelcomeNotification()
-                Thread.sleep(waitMillis.toLong())
-                waitMillis *= 2
+                startForegroundService(intent)
+                preferenceRepository.setServiceRunning(true)
+                updateTileState(true)
+                tile.updateTile()
+
             }
         }
 
-
-        val intent = Intent(this, ForegroundService::class.java)
-        val currentlyRunning = sharedPreferences.getBoolean(Constants.PREF_SERVICE_RUNNING, false) // Check persisted state
-
-        if (!currentlyRunning) {
-            Log.d("QSTileService", "onClick: Starting ForegroundService.")
-            applicationContext.startForegroundService(intent)
-            // Optimistically update the tile, receiver will correct if needed
-            updateTileState(true)
-        } else {
-            Log.d("QSTileService", "onClick: Stopping ForegroundService.")
-            applicationContext.stopService(intent)
-            // Optimistically update the tile, receiver will correct if needed
-            sharedPreferences.edit { putBoolean(Constants.PREF_SERVICE_RUNNING, false) }
-            updateTileState(false)
-        }
         tile.updateTile()
     }
 
@@ -105,7 +125,9 @@ class QSTileService: TileService() {
     override fun onStartListening() {
         super.onStartListening()
         // Update tile based on persisted state initially
-        updateTileState(sharedPreferences.getBoolean(Constants.PREF_SERVICE_RUNNING, false))
+        serviceScope.launch {
+            updateTileState(preferenceRepository.isServiceRunning().first())
+        }
 
         val intentFilter = IntentFilter()
         intentFilter.addAction(Constants.BROADCAST_ACTION_FOREGROUND)
