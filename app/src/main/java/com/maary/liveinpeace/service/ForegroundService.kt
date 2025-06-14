@@ -333,7 +333,6 @@ class ForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioManager.registerAudioDeviceCallback(audioDeviceCallback, null) // Consider using a Handler for the callback thread if needed
 

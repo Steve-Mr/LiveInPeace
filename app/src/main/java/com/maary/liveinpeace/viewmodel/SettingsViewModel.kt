@@ -1,9 +1,12 @@
 package com.maary.liveinpeace.viewmodel
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.maary.liveinpeace.MainActivity
 import com.maary.liveinpeace.database.PreferenceRepository
 import com.maary.liveinpeace.service.ForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,7 +34,6 @@ class SettingsViewModel @Inject constructor(
         } else {
             stopForegroundService()
         }
-        //todo set foreground state in foreground service
     }
 
     private fun startForegroundService() {
@@ -71,6 +73,16 @@ class SettingsViewModel @Inject constructor(
 
     fun hideInLauncherSwitch() {
         viewModelScope.launch {
+            val packageManager = application.packageManager
+            val componentName = ComponentName(application, "${application.packageName}.MainActivityAlias")
+
+            val newState = if(!_hideInLauncherSwitchState.value) {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            }
+
+            packageManager.setComponentEnabledSetting(componentName, newState, PackageManager.DONT_KILL_APP)
             preferenceRepository.setHideInLauncher(!_hideInLauncherSwitchState.value)
         }
     }

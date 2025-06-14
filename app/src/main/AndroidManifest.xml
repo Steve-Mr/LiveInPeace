@@ -25,12 +25,19 @@
             android:exported="true"
             android:label="@string/title_activity_main"
             android:theme="@style/Theme.LiveInPeace">
+        </activity>
+        <activity-alias
+            android:name=".MainActivityAlias"
+            android:exported="true"
+            android:label="@string/title_activity_main"
+            android:theme="@style/Theme.LiveInPeace"
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
         <activity
             android:name=".HistoryActivity"
             android:theme="@style/Theme.LiveInPeace" />
