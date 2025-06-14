@@ -22,6 +22,8 @@ import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_BUTTON
 import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_DATABASE
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.databinding.ActivityHistoryBinding
+import com.maary.liveinpeace.viewmodel.ConnectionViewModel
+import com.maary.liveinpeace.viewmodel.ConnectionViewModelFactory
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
