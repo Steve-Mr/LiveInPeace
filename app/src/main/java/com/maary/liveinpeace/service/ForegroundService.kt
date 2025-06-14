@@ -16,31 +16,15 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.annotation.RequiresApi
-import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import com.maary.liveinpeace.Constants.Companion.ACTION_NAME_SETTINGS
-import com.maary.liveinpeace.Constants.Companion.ALERT_TIME
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_CONNECTIONS_UPDATE
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_MUTE
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_TOGGLE
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_UPDATE
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
-import com.maary.liveinpeace.Constants.Companion.EXTRA_CONNECTIONS_LIST
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_ALERT
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_FOREGROUND
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_FORE
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_PROTECT
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_PROTECT
+import com.maary.liveinpeace.Constants
 import com.maary.liveinpeace.DeviceTimer
 import com.maary.liveinpeace.MainActivity
 import com.maary.liveinpeace.R
+import com.maary.liveinpeace.SleepNotification
 import com.maary.liveinpeace.SleepNotification.find
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.database.ConnectionDao
@@ -51,146 +35,193 @@ import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.text.DateFormat
 import java.time.LocalDate
-import java.util.Date
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * 前台服务，用于监控音频设备连接、实现护耳模式和管理通知。
+ *
+ * 重构要点:
+ * 1.  **封装和内聚**: 将相关逻辑（如权限检查、通知更新）封装到独立的辅助函数中，提高代码复用性。
+ * 2.  **常量化**: 消除魔法数字（如 PendingIntent 的请求码、设备类型 ID），代之以有意义的常量，增强可读性。
+ * 3.  **代码简化**: 简化广播接收器的实现，避免代码重复。
+ * 4.  **健壮性**: 在所有通知操作前添加统一的权限检查，确保在 Android 13+ 系统上的稳定性。
+ * 5.  **可读性**: 优化函数和变量命名，增加注释，使代码意图更清晰。
+ * 6.  **结构优化**: `audioDeviceCallback` 内部逻辑被拆分为更小、职责更单一的函数，降低了复杂度和嵌套。
+ */
 @AndroidEntryPoint
 class ForegroundService : Service() {
 
-    // Use instance scope for CoroutineScope to easily cancel jobs in onDestroy
-    private val serviceScope = CoroutineScope(Dispatchers.IO)
+    companion object {
+        private const val TAG = "ForegroundService"
 
-    private lateinit var database: ConnectionRoomDatabase
-    private lateinit var connectionDao: ConnectionDao
-    private lateinit var audioManager: AudioManager
+        // 为 PendingIntent 定义请求码常量，避免使用魔法数字
+        private const val REQUEST_CODE_SETTINGS = 0
+        private const val REQUEST_CODE_SLEEP_TIMER = 2
+        private const val REQUEST_CODE_MUTE = 3
+
+        // 为未知的设备类型 `28` 定义一个有意义的常量名
+        private const val TYPE_UNKNOWN_DEVICE_28 = 28
+    }
+
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val audioManager: AudioManager by lazy {
+        getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
 
     @Inject
     lateinit var preferenceRepository: PreferenceRepository
 
-    // Instance variable for device map
-    private val deviceMap: MutableMap<String, Connection> =
-        ConcurrentHashMap() // Use ConcurrentHashMap if worried about potential multi-threaded access, otherwise regular HashMap is fine.
-    private val deviceTimerMap: MutableMap<String, DeviceTimer> = ConcurrentHashMap()
-
-    // create mutex instance to protect deviceMap
-    private val deviceMapMutex = Mutex()
-
-    private val protectionJobs = ConcurrentHashMap<String, Job>()
-
-    private val volumeDrawableIds = intArrayOf(
-        R.drawable.ic_volume_silent,
-        R.drawable.ic_volume_low,
-        R.drawable.ic_volume_middle,
-        R.drawable.ic_volume_high,
-        R.drawable.ic_volume_mega
-    )
-
+    private lateinit var connectionDao: ConnectionDao
     private lateinit var volumeComment: Array<String>
 
-    // Method to broadcast the current connection list
-    private fun broadcastConnectionsUpdate() {
-        val intent = Intent(BROADCAST_ACTION_CONNECTIONS_UPDATE)
-        // Convert map values to ArrayList which is Serializable/Parcelable
-        val connectionList = ArrayList(deviceMap.values)
-        intent.putParcelableArrayListExtra(EXTRA_CONNECTIONS_LIST, connectionList)
-        sendBroadcast(intent)
+    // 使用 ConcurrentHashMap 保证多线程访问的安全性
+    private val deviceMap = ConcurrentHashMap<String, Connection>()
+    private val deviceTimerMap = ConcurrentHashMap<String, DeviceTimer>()
+    private val protectionJobs = ConcurrentHashMap<String, Job>()
+    private val deviceMapMutex = Mutex()
+
+    override fun onCreate() {
+        super.onCreate()
+        Log.d(TAG, "Service creating...")
+
+        initializeDependencies()
+        registerReceiversAndCallbacks()
+
+        // 启动前台服务，并立即更新一次通知状态
+        startForegroundWithNotification()
+        setServiceRunningState(true)
+
+        Log.d(TAG, "Service created successfully.")
     }
 
-
-    private fun getVolumePercentage(): Int {
-        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        // Avoid division by zero if maxVolume is 0
-        return if (maxVolume > 0) 100 * currentVolume / maxVolume else 0
+    private fun initializeDependencies() {
+        connectionDao = ConnectionRoomDatabase.getDatabase(applicationContext).connectionDao()
+        volumeComment = resources.getStringArray(R.array.array_volume_comment)
     }
 
-    private fun getVolumeLevel(percent: Int): Int {
-        return when (percent) {
-            in 0..0 -> 0
-            in 1..25 -> 1
-            in 26..50 -> 2
-            in 50..80 -> 3
-            else -> 4
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private fun registerReceiversAndCallbacks() {
+        // 注册音频设备回调
+        audioManager.registerAudioDeviceCallback(audioDeviceCallback, null)
+
+        // 注册音量变化接收器
+        val volumeFilter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
+        registerReceiver(volumeChangeReceiver, volumeFilter)
+
+        // 注册休眠定时器更新接收器
+        val sleepFilter = IntentFilter(Constants.BROADCAST_ACTION_SLEEPTIMER_UPDATE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(sleepReceiver, sleepFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(sleepReceiver, sleepFilter)
         }
     }
 
-    private val volumeChangeReceiver = object : VolumeReceiver() {
-        @SuppressLint("MissingPermission")
-        override fun updateNotification(context: Context) {
-            Log.v("MUTE_TEST", "VOLUME_CHANGE_RECEIVER")
-            with(NotificationManagerCompat.from(applicationContext)) {
-                notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
-            }
+    @SuppressLint("MissingPermission")
+    private fun startForegroundWithNotification() {
+        if (!hasNotificationPermission()) {
+            Log.w(TAG, "Missing POST_NOTIFICATIONS permission. Cannot start foreground service with notification.")
+            // 即使没有权限，也需要调用 startForeground，否则服务可能被系统杀死
+            // 可以提供一个不含任何信息的最小化 Notification
+            startForeground(Constants.ID_NOTIFICATION_FOREGROUND, NotificationCompat.Builder(this, Constants.CHANNEL_ID_DEFAULT).build())
+            return
+        }
+        startForeground(Constants.ID_NOTIFICATION_FOREGROUND, createForegroundNotification(this))
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand received.")
+        // 确保服务被重新创建时，通知内容是最新的
+        updateForegroundNotification()
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        Log.d(TAG, "Service destroying...")
+
+        // 在清理资源前，先更新服务状态
+        setServiceRunningState(false)
+
+        saveDataForActiveConnections()
+        cleanupResources()
+
+        // 停止前台服务并移除通知
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(Constants.ID_NOTIFICATION_FOREGROUND)
+
+        Log.d(TAG, "Service destroyed.")
+        super.onDestroy()
+    }
+
+    private fun cleanupResources() {
+        // 取消所有由该服务启动的协程
+        serviceScope.cancel()
+
+        // 停止并清理所有设备计时器
+        deviceTimerMap.values.forEach { it.stop() }
+        deviceTimerMap.clear()
+
+        // 安全地反注册所有接收器和回调
+        safeUnregisterReceiver(volumeChangeReceiver)
+        safeUnregisterReceiver(sleepReceiver)
+        try {
+            audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error unregistering audio callback", e)
         }
     }
 
-    private val sleepReceiver = object : SleepReceiver() {
-        @SuppressLint("MissingPermission")
-        override fun updateNotification(context: Context) {
-            with(NotificationManagerCompat.from(applicationContext)) {
-                notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
-            }
+    private fun safeUnregisterReceiver(receiver: android.content.BroadcastReceiver) {
+        try {
+            unregisterReceiver(receiver)
+        } catch (e: IllegalArgumentException) {
+            Log.w(TAG, "${receiver::class.java.simpleName} was not registered or already unregistered.", e)
         }
     }
 
-    // Saves data for currently connected devices when service stops
     private fun saveDataForActiveConnections() {
         val disconnectedTime = System.currentTimeMillis()
-        val currentConnections =
-            deviceMap.toMap() // Create a copy to avoid ConcurrentModificationException if needed
-        deviceMap.clear() // Clear the instance map
+        val currentConnections = deviceMap.toMap() // 创建副本以安全遍历
+        deviceMap.clear()
 
         currentConnections.forEach { (_, connection) ->
-            val connectedTime = connection.connectedTime
-            if (connectedTime != null) {
-                val connectionTime = disconnectedTime - connectedTime
-                serviceScope.launch {
-                    try {
-                        connectionDao.insert(
-                            Connection(
-                                name = connection.name,
-                                type = connection.type,
-                                connectedTime = connection.connectedTime,
-                                disconnectedTime = disconnectedTime,
-                                duration = connectionTime,
-                                date = connection.date
-                            )
-                        )
-                        Log.d("ForegroundService", "Saved connection data for ${connection.name}")
-                    } catch (e: Exception) {
-                        Log.e(
-                            "ForegroundService",
-                            "Error saving connection data for ${connection.name}",
-                            e
-                        )
-                    }
+            val connectedTime = connection.connectedTime ?: return@forEach
+            val connectionTime = disconnectedTime - connectedTime
+
+            serviceScope.launch {
+                try {
+                    val finalConnection = connection.copy(
+                        disconnectedTime = disconnectedTime,
+                        duration = connectionTime
+                    )
+                    connectionDao.insert(finalConnection)
+                    Log.d(TAG, "Saved connection data for ${connection.name}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error saving connection data for ${connection.name}", e)
                 }
             }
         }
-        // Notify that the connection list is now empty
         broadcastConnectionsUpdate()
     }
 
+    /**
+     * 音频设备连接状态的回调处理。
+     * 内部逻辑被拆分为多个辅助函数，以提高清晰度和可维护性。
+     */
     private val audioDeviceCallback = object : AudioDeviceCallback() {
-
-        // 使用伴生对象管理常量，消除魔法数字
-        private val TAG = "AudioDeviceCallback"
+        private val CALLBACK_TAG = "AudioDeviceCallback"
         private val EAR_PROTECTION_LOWER_THRESHOLD = 10
         private val EAR_PROTECTION_UPPER_THRESHOLD = 25
         private val VOLUME_ADJUST_ATTEMPTS = 100
 
-        // 将需要忽略的设备类型定义为常量集合，方便管理
         private val IGNORED_DEVICE_TYPES = setOf(
             AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
             AudioDeviceInfo.TYPE_BUILTIN_MIC,
@@ -199,100 +230,51 @@ class ForegroundService : Service() {
             AudioDeviceInfo.TYPE_FM_TUNER,
             AudioDeviceInfo.TYPE_REMOTE_SUBMIX,
             AudioDeviceInfo.TYPE_TELEPHONY,
-            28 // TODO: 为这个值定义一个有意义的常量名，例如 TYPE_CUSTOM_DEVICE
+            TYPE_UNKNOWN_DEVICE_28 // 使用常量代替魔法数字
         )
 
-        /**
-         * 当新的音频设备被添加（连接）时调用。
-         */
-        @SuppressLint("MissingPermission")
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
             if (addedDevices.isNullOrEmpty()) return
 
             serviceScope.launch {
-                // 在循环外一次性获取配置，避免重复读取
                 val isWatchingEnabled = preferenceRepository.getWatchingState().first()
                 val isEarProtectionOn = preferenceRepository.isEarProtectionOn().first()
-                var hasChanges = false // 标志位，用于判断是否需要更新UI
 
-                addedDevices.forEach { deviceInfo ->
-                    // 使用辅助函数进行判断，使逻辑更清晰
-                    if (isIgnoredDevice(deviceInfo)) return@forEach
-
-                    val deviceName = getDeviceName(deviceInfo) ?: return@forEach
-                    if (deviceName == Build.MODEL) return@forEach // 忽略本机设备
-
-                    // 处理设备添加的核心逻辑
+                addedDevices.filterNot { shouldIgnoreDevice(it) }.forEach { deviceInfo ->
+                    val deviceName = getDeviceName(deviceInfo)
                     val wasAdded = processNewDevice(deviceInfo, deviceName, isWatchingEnabled)
-                    if (wasAdded) {
-                        hasChanges = true
-                        // 如果开启了护耳模式，则应用
-                        if (isEarProtectionOn) {
-                            applyEarProtection(deviceName)
-                        }
+                    if (wasAdded && isEarProtectionOn) {
+                        applyEarProtection(deviceName)
                     }
                 }
-
-                // 在所有设备处理完毕后，如果发生了变化，则统一更新UI和通知
-                if (hasChanges) {
-                    Log.d(TAG, "Device map updated due to additions: ${deviceMap.keys}")
-                    updateUiAndNotifications()
-                }
+                onDeviceListChanged()
             }
         }
 
-        /**
-         * 当音频设备被移除（断开）时调用。
-         */
-        @SuppressLint("MissingPermission")
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
             if (removedDevices.isNullOrEmpty()) return
 
             serviceScope.launch {
-                var hasChanges = false
-
-                removedDevices.forEach { deviceInfo ->
-                    val deviceName = getDeviceName(deviceInfo) ?: return@forEach
-
-                    // 取消与该设备相关的护耳任务
-                    protectionJobs.remove(deviceName)?.cancel()
-
-                    // 处理设备移除的核心逻辑
-                    val connectionToSave = processRemovedDevice(deviceName)
-                    if (connectionToSave != null) {
-                        hasChanges = true
+                removedDevices.filterNot { shouldIgnoreDevice(it) }.forEach { deviceInfo ->
+                    val deviceName = getDeviceName(deviceInfo)
+                    processRemovedDevice(deviceName)?.let { connectionToSave ->
                         saveConnectionToDatabase(connectionToSave)
                     }
                 }
-
-                // 在所有设备处理完毕后，如果发生了变化，则统一更新UI和通知
-                if (hasChanges) {
-                    Log.d(TAG, "Device map updated due to removals: ${deviceMap.keys}")
-                    updateUiAndNotifications()
-                }
+                onDeviceListChanged()
             }
         }
 
-        // --- 辅助函数 ---
-
-        /**
-         * 检查设备类型是否应该被忽略。
-         */
-        private fun isIgnoredDevice(deviceInfo: AudioDeviceInfo): Boolean {
-            return deviceInfo.type in IGNORED_DEVICE_TYPES
+        private fun shouldIgnoreDevice(deviceInfo: AudioDeviceInfo): Boolean {
+            val deviceName = getDeviceName(deviceInfo)
+            // 忽略本机、无名设备或特定类型的设备
+            return deviceName.isEmpty() || deviceName == Build.MODEL || deviceInfo.type in IGNORED_DEVICE_TYPES
         }
 
-        /**
-         * 获取规范化的设备名称。
-         */
-        private fun getDeviceName(deviceInfo: AudioDeviceInfo): String? {
-            val name = deviceInfo.productName?.toString()?.trim()
-            return if (name.isNullOrBlank()) null else name
+        private fun getDeviceName(deviceInfo: AudioDeviceInfo): String {
+            return deviceInfo.productName?.toString()?.trim() ?: ""
         }
 
-        /**
-         * 处理新连接的设备，更新状态并返回是否成功添加。
-         */
         private suspend fun processNewDevice(
             deviceInfo: AudioDeviceInfo,
             deviceName: String,
@@ -301,7 +283,7 @@ class ForegroundService : Service() {
             var wasAdded = false
             deviceMapMutex.withLock {
                 if (!deviceMap.containsKey(deviceName)) {
-                    Log.d(TAG, "Device Added: $deviceName (Type: ${deviceInfo.type})")
+                    Log.d(CALLBACK_TAG, "Device Added: $deviceName")
                     deviceMap[deviceName] = Connection(
                         name = deviceName,
                         type = deviceInfo.type,
@@ -313,43 +295,38 @@ class ForegroundService : Service() {
                     wasAdded = true
 
                     if (isWatching) {
-                        Log.d(TAG, "Starting timer for $deviceName")
-                        val deviceTimer = DeviceTimer(applicationContext, deviceName)
-                        deviceTimer.start()
-                        deviceTimerMap[deviceName] = deviceTimer
+                        Log.d(CALLBACK_TAG, "Starting timer for $deviceName")
+                        DeviceTimer(applicationContext, deviceName).also {
+                            it.start()
+                            deviceTimerMap[deviceName] = it
+                        }
                     }
                 }
             }
             return wasAdded
         }
 
-        /**
-         * 处理断开连接的设备，返回一个需要被保存到数据库的 Connection 对象。
-         */
         private suspend fun processRemovedDevice(deviceName: String): Connection? {
             var connectionToSave: Connection? = null
-            val disconnectedTime = System.currentTimeMillis()
-
             deviceMapMutex.withLock {
-                // 如果设备在我们的监控列表中，则处理它
                 if (deviceMap.containsKey(deviceName)) {
-                    Log.d(TAG, "Device Removed: $deviceName")
+                    Log.d(CALLBACK_TAG, "Device Removed: $deviceName")
+
+                    // 停止相关任务和计时器
+                    protectionJobs.remove(deviceName)?.cancel()
+                    deviceTimerMap.remove(deviceName)?.stop()
 
                     val connection = deviceMap.remove(deviceName)
-                    deviceTimerMap.remove(deviceName)?.stop() // 停止并移除计时器
-
                     if (connection?.connectedTime != null) {
+                        val disconnectedTime = System.currentTimeMillis()
                         val duration = disconnectedTime - connection.connectedTime
                         connectionToSave = connection.copy(
                             disconnectedTime = disconnectedTime,
                             duration = duration
                         )
-
-                        // 如果连接时间超过阈值，取消警报通知
-                        if (duration > ALERT_TIME) {
-                            val notificationManager =
-                                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                            notificationManager.cancel(ID_NOTIFICATION_ALERT)
+                        if (duration > Constants.ALERT_TIME) {
+                            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                            notificationManager.cancel(Constants.ID_NOTIFICATION_ALERT)
                         }
                     }
                 }
@@ -357,322 +334,239 @@ class ForegroundService : Service() {
             return connectionToSave
         }
 
-        /**
-         * 将连接记录保存到数据库。
-         */
         private suspend fun saveConnectionToDatabase(connection: Connection) {
             try {
                 connectionDao.insert(connection)
-                Log.d(TAG, "Saved connection data for ${connection.name}")
+                Log.d(CALLBACK_TAG, "Saved connection data for ${connection.name}")
             } catch (e: Exception) {
-                Log.e(TAG, "Error saving connection data for ${connection.name}", e)
+                Log.e(CALLBACK_TAG, "Error saving connection data", e)
             }
         }
 
-        /**
-         * 应用护耳逻辑，自动调整音量到安全范围。
-         */
-        @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
         private fun applyEarProtection(deviceName: String) {
             val protectionJob = serviceScope.launch {
                 try {
-                    Log.d(TAG, "Applying ear protection for $deviceName")
+                    Log.d(CALLBACK_TAG, "Applying ear protection for $deviceName")
                     var protectionApplied = false
 
-                    // 降低音量
-                    var lowerAttempts = VOLUME_ADJUST_ATTEMPTS
-                    while (getVolumePercentage() > EAR_PROTECTION_UPPER_THRESHOLD && lowerAttempts-- > 0 && isActive) {
-                        audioManager.adjustStreamVolume(
-                            AudioManager.STREAM_MUSIC,
-                            AudioManager.ADJUST_LOWER,
-                            0
-                        )
+                    // 调整音量到安全范围
+                    while (getVolumePercentage() > EAR_PROTECTION_UPPER_THRESHOLD && isActive) {
+                        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
                         protectionApplied = true
                     }
-
-                    // 升高音量
-                    var raiseAttempts = VOLUME_ADJUST_ATTEMPTS
-                    while (getVolumePercentage() < EAR_PROTECTION_LOWER_THRESHOLD && raiseAttempts-- > 0 && isActive) {
-                        audioManager.adjustStreamVolume(
-                            AudioManager.STREAM_MUSIC,
-                            AudioManager.ADJUST_RAISE,
-                            0
-                        )
+                    while (getVolumePercentage() < EAR_PROTECTION_LOWER_THRESHOLD && isActive) {
+                        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
                         protectionApplied = true
                     }
 
                     if (protectionApplied) {
-                        Log.d(TAG, "Ear protection applied for $deviceName.")
-                        NotificationManagerCompat.from(applicationContext)
-                            .notify(ID_NOTIFICATION_PROTECT, createProtectionNotification())
+                        Log.d(CALLBACK_TAG, "Ear protection applied for $deviceName.")
+                        showProtectionNotification()
                     }
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    Log.d(TAG, "Protection job for $deviceName was cancelled.")
+                } catch (e: CancellationException) {
+                    Log.d(CALLBACK_TAG, "Protection job for $deviceName was cancelled.")
                 } finally {
-                    // 任务完成后（无论成功或取消），从 Map 中移除
                     protectionJobs.remove(deviceName)
                 }
             }
-            // 使用设备名称作为 Key，更稳定
             protectionJobs[deviceName] = protectionJob
         }
-
-        /**
-         * 统一更新前台通知和广播。
-         */
-        @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-        private fun updateUiAndNotifications() {
-            // 广播更新
-            broadcastConnectionsUpdate()
-            // 更新前台服务通知
-            NotificationManagerCompat.from(applicationContext)
-                .notify(
-                    ID_NOTIFICATION_FOREGROUND,
-                    createForegroundNotification(applicationContext)
-                )
-        }
     }
 
+    // --- 辅助函数 ---
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    override fun onCreate() {
-        super.onCreate()
+    override fun onBind(intent: Intent?): IBinder? = null
 
-        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audioManager.registerAudioDeviceCallback(
-            audioDeviceCallback,
-            null
-        ) // Consider using a Handler for the callback thread if needed
+    /**
+     * 封装权限检查逻辑，提高代码复用性。
+     */
+    private fun hasNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return true
+        }
+        return ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 
-        // Initialize Database and DAO
-        database = ConnectionRoomDatabase.getDatabase(applicationContext)
-        connectionDao = database.connectionDao()
-
-        // Load comments
-        volumeComment = resources.getStringArray(R.array.array_volume_comment)
-
-        // Register Receivers
-        val volumeFilter = IntentFilter().apply {
-            addAction("android.media.VOLUME_CHANGED_ACTION")
-        } // Use constant
-        // Check for permission before registering if targeting Android 14+ for non-exported receivers needing permissions
-        registerReceiver(volumeChangeReceiver, volumeFilter)
-
-        val sleepFilter = IntentFilter(BROADCAST_ACTION_SLEEPTIMER_UPDATE)
-        // Use RECEIVER_NOT_EXPORTED for internal broadcasts
-        registerReceiver(sleepReceiver, sleepFilter, RECEIVER_NOT_EXPORTED)
-
-        // Start foreground
-        startForeground(
-            ID_NOTIFICATION_FOREGROUND,
-            createForegroundNotification(applicationContext)
+    /**
+     * 统一更新前台服务通知的入口。
+     */
+    @SuppressLint("MissingPermission")
+    private fun updateForegroundNotification() {
+        if (!hasNotificationPermission()) {
+            Log.w(TAG, "Cannot update notification: Permission denied.")
+            return
+        }
+        NotificationManagerCompat.from(this).notify(
+            Constants.ID_NOTIFICATION_FOREGROUND,
+            createForegroundNotification(this)
         )
-
-        // Update persisted state and notify components
-        setServiceRunningState(true)
-
-        Log.d("ForegroundService", "onCreate Finished")
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("ForegroundService", "onStartCommand received")
-
-        // Ensure the foreground notification is up-to-date if started again
-        NotificationManagerCompat.from(applicationContext).apply {
-            if (ActivityCompat.checkSelfPermission(
-                    applicationContext,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                notify(ID_NOTIFICATION_FOREGROUND, createForegroundNotification(applicationContext))
-            }
-        }
-        return START_STICKY
-    }
-
-    override fun onDestroy() {
-        Log.d("ForegroundService", "onDestroy - Cleaning up...")
-
-        // Set persisted state to false *before* cleanup, in case cleanup fails
-        setServiceRunningState(false)
-
-        // Save data for any remaining active connections
-        saveDataForActiveConnections()
-
-        // Cancel all coroutines started by this service instance
-        serviceScope.cancel()
-
-        // Stop and clear all timers
-        try {
-            deviceTimerMap.values.forEach { it.stop() }
-            deviceTimerMap.clear()
-            Log.d("ForegroundService", "Device timers stopped and cleared.")
-        } catch (e: Exception) {
-            Log.e("ForegroundService", "Error stopping timers", e)
-        }
-
-
-        // Unregister receivers and callbacks
-        try {
-            unregisterReceiver(volumeChangeReceiver)
-            Log.d("ForegroundService", "Volume receiver unregistered.")
-        } catch (e: IllegalArgumentException) {
-            Log.w("ForegroundService", "Volume receiver already unregistered?", e)
-        }
-        try {
-            unregisterReceiver(sleepReceiver)
-            Log.d("ForegroundService", "Sleep receiver unregistered.")
-        } catch (e: IllegalArgumentException) {
-            Log.w("ForegroundService", "Sleep receiver already unregistered?", e)
-        }
-        try {
-            audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
-            Log.d("ForegroundService", "Audio device callback unregistered.")
-        } catch (e: Exception) {
-            Log.e("ForegroundService", "Error unregistering audio callback", e)
-        }
-
-        // Stop foreground service removal notification
-        stopForeground(STOP_FOREGROUND_REMOVE)
-
-        val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(ID_NOTIFICATION_FOREGROUND)
-        Log.d("ForegroundService", "onDestroy Finished")
-        super.onDestroy()
-    }
-
-
-    // Required method for Service, return null for non-bound service
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
-
-    // Helper to update persisted state and send broadcast
-    private fun setServiceRunningState(isRunning: Boolean) {
-        // Update Preferences
-        serviceScope.launch {
-            preferenceRepository.setServiceRunning(isRunning)
-        }
-        // Send broadcast to notify components like QSTileService
-        val intent = Intent(BROADCAST_ACTION_FOREGROUND)
-        intent.putExtra(BROADCAST_FOREGROUND_INTENT_EXTRA, isRunning)
-        sendBroadcast(intent)
-        Log.d("ForegroundService", "Service running state set to $isRunning and broadcast sent.")
-    }
-
-
-    @SuppressLint("LaunchActivityFromNotification") // If PendingIntent launches Activity
-    fun createForegroundNotification(context: Context): Notification {
-        val currentVolume = getVolumePercentage()
-        val currentVolumeLevel = getVolumeLevel(currentVolume)
-        // Ensure volumeComment is initialized
-        val comment =
-            if (::volumeComment.isInitialized && currentVolumeLevel < volumeComment.size) {
-                volumeComment[currentVolumeLevel]
-            } else {
-                "Volume" // Fallback
-            }
-
-        val nIcon = generateNotificationIcon(context)
-
-        // --- Intents for Actions ---
-        val settingsIntent = Intent(this, MainActivity::class.java).apply {
-            action = ACTION_NAME_SETTINGS
-        }
-        val settingsPendingIntent: PendingIntent =
-            PendingIntent.getBroadcast(
-                this,
-                0,
-                settingsIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            ) // Use UPDATE_CURRENT if intent extras change
-
-        val sleepIntent = Intent(context, MuteMediaReceiver::class.java).apply {
-            action = BROADCAST_ACTION_SLEEPTIMER_TOGGLE
-        }
-        val pendingSleepIntent = PendingIntent.getBroadcast(
-            context,
-            2,
-            sleepIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        ) // Different request code (2)
-
-        val muteMediaIntent = Intent(context, MuteMediaReceiver::class.java).apply {
-            action = BROADCAST_ACTION_MUTE
-        }
-        val pendingMuteIntent = PendingIntent.getBroadcast(
-            context,
-            3,
-            muteMediaIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        ) // Different request code (3)
-
-        val sleepNotification = find() // From SleepNotification object
-        val sleepTitle = if (sleepNotification != null) {
-            DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(sleepNotification.`when`))
-        } else {
-            resources.getString(R.string.sleep)
-        }
-
-        // --- Build Actions ---
-        val actionSettings: NotificationCompat.Action = NotificationCompat.Action.Builder(
-            R.drawable.ic_baseline_settings_24,
-            resources.getString(R.string.settings),
-            settingsPendingIntent
-        ).build()
-
-        val actionSleepTimer: NotificationCompat.Action = NotificationCompat.Action.Builder(
-            R.drawable.ic_tile, // Consider a sleep-specific icon
-            sleepTitle,
-            pendingSleepIntent
-        ).build()
-
-
-        // Build Notification
-        return NotificationCompat.Builder(this, CHANNEL_ID_DEFAULT)
-            .setContentTitle(getString(R.string.to_be_or_not)) // Consider more descriptive title
-            .setOnlyAlertOnce(true)
-            .setContentText(
-                String.format(
-                    resources.getString(R.string.current_volume_percent),
-                    comment,
-                    currentVolume
-                )
-            )
-            .setSmallIcon(nIcon)
-            .setOngoing(true)
-            .setContentIntent(pendingMuteIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(actionSettings)
-            .addAction(actionSleepTimer)
-            .setGroup(ID_NOTIFICATION_GROUP_FORE)
-            .setGroupSummary(false)
-            .build()
-    }
-
-    fun createProtectionNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID_PROTECT)
+    /**
+     * 显示护耳模式已应用的通知。
+     */
+    @SuppressLint("MissingPermission")
+    private fun showProtectionNotification() {
+        if (!hasNotificationPermission()) return
+        val notification = NotificationCompat.Builder(this, Constants.CHANNEL_ID_PROTECT)
             .setContentTitle(getString(R.string.ears_protected))
             .setSmallIcon(R.drawable.ic_headphones_protection)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setGroup(ID_NOTIFICATION_GROUP_PROTECT)
+            .setGroup(Constants.ID_NOTIFICATION_GROUP_PROTECT)
             .setTimeoutAfter(3000)
-            .setGroupSummary(false)
+            .build()
+        NotificationManagerCompat.from(this).notify(Constants.ID_NOTIFICATION_PROTECT, notification)
+    }
+
+    private fun onDeviceListChanged() {
+        broadcastConnectionsUpdate()
+        updateForegroundNotification()
+    }
+
+    private fun broadcastConnectionsUpdate() {
+        val intent = Intent(Constants.BROADCAST_ACTION_CONNECTIONS_UPDATE).apply {
+            putParcelableArrayListExtra(
+                Constants.EXTRA_CONNECTIONS_LIST,
+                ArrayList(deviceMap.values)
+            )
+        }
+        sendBroadcast(intent)
+    }
+
+    private fun setServiceRunningState(isRunning: Boolean) {
+        serviceScope.launch {
+            preferenceRepository.setServiceRunning(isRunning)
+        }
+        val intent = Intent(Constants.BROADCAST_ACTION_FOREGROUND).apply {
+            putExtra(Constants.BROADCAST_FOREGROUND_INTENT_EXTRA, isRunning)
+        }
+        sendBroadcast(intent)
+        Log.d(TAG, "Service running state set to $isRunning and broadcast sent.")
+    }
+
+    private fun getVolumePercentage(): Int {
+        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        return if (maxVolume > 0) 100 * currentVolume / maxVolume else 0
+    }
+
+    private fun getVolumeLevel(percent: Int): Int {
+        return when (percent) {
+            0 -> 0
+            in 1..25 -> 1
+            in 26..50 -> 2
+            in 51..80 -> 3
+            else -> 4
+        }
+    }
+
+    // --- 广播接收器 ---
+
+    private val volumeChangeReceiver = object : VolumeReceiver() {
+        override fun updateNotification(context: Context) {
+            updateForegroundNotification()
+        }
+    }
+
+    private val sleepReceiver = object : SleepReceiver() {
+        override fun updateNotification(context: Context) {
+            updateForegroundNotification()
+        }
+    }
+
+    // --- 通知创建 ---
+
+    private fun createForegroundNotification(context: Context): Notification {
+        val currentVolume = getVolumePercentage()
+        val volumeLevel = getVolumeLevel(currentVolume)
+        val comment = volumeComment.getOrElse(volumeLevel) { "Volume" }
+
+        val contentText = String.format(
+            resources.getString(R.string.current_volume_percent),
+            comment,
+            currentVolume
+        )
+
+        return NotificationCompat.Builder(this, Constants.CHANNEL_ID_DEFAULT)
+            .setContentTitle(getString(R.string.to_be_or_not))
+            .setContentText(contentText)
+            .setSmallIcon(generateNotificationIcon(context, currentVolume, volumeLevel))
+            .setOnlyAlertOnce(true)
+            .setOngoing(true)
+            .setContentIntent(createMutePendingIntent(context))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setGroup(Constants.ID_NOTIFICATION_GROUP_FORE)
+            .addAction(createSettingsAction(context))
+            .addAction(createSleepTimerAction(context))
             .build()
     }
 
-    @SuppressLint("DiscouragedApi")
-    private fun generateNotificationIcon(context: Context): IconCompat {
-        val currentVolume = getVolumePercentage()
-
-        val resourceName = "num_${currentVolume}"
-        val resourceId = resources.getIdentifier(resourceName, "drawable", context.packageName)
-        return if (resourceId != 0) IconCompat.createWithResource(this, resourceId)
-        else IconCompat.createWithResource(
+    private fun createSettingsAction(context: Context): NotificationCompat.Action {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            action = Constants.ACTION_NAME_SETTINGS
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
             context,
-            volumeDrawableIds[getVolumeLevel(currentVolume)]
-        ) // Fallback to image mode
+            REQUEST_CODE_SETTINGS,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        return NotificationCompat.Action.Builder(
+            R.drawable.ic_baseline_settings_24,
+            resources.getString(R.string.settings),
+            pendingIntent
+        ).build()
+    }
 
+    private fun createSleepTimerAction(context: Context): NotificationCompat.Action {
+        val sleepNotification = find()
+        val sleepTitle = sleepNotification?.let {
+            DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(it.`when`))
+        } ?: resources.getString(R.string.sleep)
+
+        val intent = Intent(context, MuteMediaReceiver::class.java).apply {
+            action = Constants.BROADCAST_ACTION_SLEEPTIMER_TOGGLE
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            REQUEST_CODE_SLEEP_TIMER,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        return NotificationCompat.Action.Builder(R.drawable.ic_tile, sleepTitle, pendingIntent).build()
+    }
+
+    private fun createMutePendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, MuteMediaReceiver::class.java).apply {
+            action = Constants.BROADCAST_ACTION_MUTE
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            REQUEST_CODE_MUTE,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
+    @SuppressLint("DiscouragedApi")
+    private fun generateNotificationIcon(context: Context, volumePercent: Int, volumeLevel: Int): IconCompat {
+        val resourceName = "num_${volumePercent}"
+        val resourceId = resources.getIdentifier(resourceName, "drawable", context.packageName)
+
+        return if (resourceId != 0) {
+            IconCompat.createWithResource(this, resourceId)
+        } else {
+            val fallbackIconRes = when(volumeLevel) {
+                0 -> R.drawable.ic_volume_silent
+                1 -> R.drawable.ic_volume_low
+                2 -> R.drawable.ic_volume_middle
+                3 -> R.drawable.ic_volume_high
+                else -> R.drawable.ic_volume_mega
+            }
+            IconCompat.createWithResource(context, fallbackIconRes)
+        }
     }
 }
