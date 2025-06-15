@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.maary.liveinpeace.MainActivity
 import com.maary.liveinpeace.database.PreferenceRepository
 import com.maary.liveinpeace.service.ForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -96,10 +95,10 @@ class SettingsViewModel @Inject constructor(
         }.launchIn(viewModelScope)
         preferenceRepository.isEarProtectionOn().onEach {
             _protectionSwitchState.value = it
-        }
+        }.launchIn(viewModelScope)
         preferenceRepository.isHideInLauncher().onEach {
             _hideInLauncherSwitchState.value = it
-        }
+        }.launchIn(viewModelScope)
     }
 
 }

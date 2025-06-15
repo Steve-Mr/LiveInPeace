@@ -22,9 +22,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants
 import com.maary.liveinpeace.DeviceTimer
-import com.maary.liveinpeace.MainActivity
+import com.maary.liveinpeace.activity.MainActivity
 import com.maary.liveinpeace.R
-import com.maary.liveinpeace.SleepNotification
 import com.maary.liveinpeace.SleepNotification.find
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.database.ConnectionDao
@@ -505,10 +504,8 @@ class ForegroundService : Service() {
     }
 
     private fun createSettingsAction(context: Context): NotificationCompat.Action {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            action = Constants.ACTION_NAME_SETTINGS
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
             context,
             REQUEST_CODE_SETTINGS,
             intent,
