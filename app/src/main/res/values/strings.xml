@@ -58,4 +58,14 @@
     <string name="notification_settings_description">Configure notification importance</string>
     <string name="exit">Exit</string>
     <string name="hide_in_launcher">Hide In Launcher</string>
+    <string name="finish">Finish</string>
+    <string name="nessery_permissions">Nessery</string>
+    <string name="optional_permissions">Optional</string>
+    <string name="notification_permission">Notification Permission</string>
+    <string name="notification_permission_description">This app needs notification permission to show the current media volume in the notification bar.</string>
+    <string name="disable_battery_optimization">Disable Battery Optimization</string>
+    <string name="disable_battery_optimization_description">Turning off battery optimization for this app helps prevent the system from stopping it unexpectedly, reducing potential errors.</string>
+    <string name="show_icon">Show App Icon in Launcher</string>
+    <string name="show_icon_description">Tapping the icon will take you to the settings page.</string>
+    <string name="title_activity_welcome">WelcomeActivity</string>
 </resources>

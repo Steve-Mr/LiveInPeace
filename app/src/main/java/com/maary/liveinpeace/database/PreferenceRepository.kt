@@ -100,4 +100,17 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
             pref[PREF_HIDE_IN_LAUNCHER] = state
         }
     }
+
+    fun isShowingIcon(): Flow<Boolean> {
+        return datastore.data.map { pref ->
+            val isHidden = pref[PREF_HIDE_IN_LAUNCHER] ?: true
+            !isHidden
+        }
+    }
+
+    suspend fun setShowIcon(state: Boolean) {
+        datastore.edit { pref ->
+            pref[PREF_HIDE_IN_LAUNCHER] = !state
+        }
+    }
 }
