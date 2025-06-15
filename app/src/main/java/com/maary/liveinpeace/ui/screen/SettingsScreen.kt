@@ -157,11 +157,12 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
             )
 
             SwitchRow(
-                title = stringResource(R.string.hide_in_launcher),
-                description = stringResource(R.string.hide_in_launcher) /* todo */,
-                state = settingsViewModel.hideInLauncherSwitchState.collectAsState().value,
-                onCheckedChange = { settingsViewModel.hideInLauncherSwitch() }
-            )
+                title = stringResource(R.string.show_icon),
+                description = stringResource(R.string.show_icon_description),
+                state = settingsViewModel.showIconState.collectAsState().value,
+            ) {
+                settingsViewModel.toggleShowIcon()
+            }
         }
     }
 }

@@ -135,7 +135,7 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
                     SwitchRow(
                         title = stringResource(R.string.notification_permission),
                         description = stringResource(R.string.notification_permission_description),
-                        state = hasNotificationPermission,/*todo*/
+                        state = hasNotificationPermission,
                     ) {
                         permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                     }

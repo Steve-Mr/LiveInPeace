@@ -106,12 +106,7 @@ fun SwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .pointerInput(Unit) {
-                detectTapGestures {
-                    onCheckedChange(!state) // 当点击 SwitchRow 时触发点击事件
-                    //todo change to clickable
-                }
-            }
+            .clickable { onCheckedChange(!state) }
             .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

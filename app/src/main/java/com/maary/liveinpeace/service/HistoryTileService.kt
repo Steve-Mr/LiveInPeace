@@ -1,5 +1,6 @@
 package com.maary.liveinpeace.service
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
@@ -8,6 +9,7 @@ import android.service.quicksettings.TileService
 import com.maary.liveinpeace.activity.HistoryActivity
 
 class HistoryTileService: TileService() {
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     override fun onClick() {
         super.onClick()
 

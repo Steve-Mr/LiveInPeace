@@ -67,23 +67,22 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private val _hideInLauncherSwitchState = MutableStateFlow(false)
-    val hideInLauncherSwitchState : StateFlow<Boolean> = _hideInLauncherSwitchState.asStateFlow()
+    private val _showIconState = MutableStateFlow(false)
+    val showIconState = _showIconState.asStateFlow()
 
-    fun hideInLauncherSwitch() {
+    fun toggleShowIcon() {
         viewModelScope.launch {
             val packageManager = application.packageManager
             val componentName = ComponentName(application, "${application.packageName}.MainActivityAlias")
 
-            val newState = if(!_hideInLauncherSwitchState.value) {
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            } else {
+            val newState = if(!_showIconState.value) {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             }
-
             packageManager.setComponentEnabledSetting(componentName, newState, PackageManager.DONT_KILL_APP)
-            _hideInLauncherSwitchState.value = !_hideInLauncherSwitchState.value
-            preferenceRepository.setHideInLauncher(!_hideInLauncherSwitchState.value)
+            _showIconState.value = !_showIconState.value
+            preferenceRepository.setShowIcon(_showIconState.value)
         }
     }
 
@@ -98,7 +97,7 @@ class SettingsViewModel @Inject constructor(
             _protectionSwitchState.value = it
         }.launchIn(viewModelScope)
         preferenceRepository.isHideInLauncher().onEach {
-            _hideInLauncherSwitchState.value = it
+            _showIconState.value = it
         }.launchIn(viewModelScope)
     }
 
