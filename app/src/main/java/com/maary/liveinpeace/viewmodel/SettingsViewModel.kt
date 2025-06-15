@@ -82,6 +82,7 @@ class SettingsViewModel @Inject constructor(
             }
 
             packageManager.setComponentEnabledSetting(componentName, newState, PackageManager.DONT_KILL_APP)
+            _hideInLauncherSwitchState.value = !_hideInLauncherSwitchState.value
             preferenceRepository.setHideInLauncher(!_hideInLauncherSwitchState.value)
         }
     }

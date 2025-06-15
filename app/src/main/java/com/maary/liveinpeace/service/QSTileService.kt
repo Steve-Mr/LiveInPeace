@@ -27,6 +27,7 @@ import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_WELCOME
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
 import com.maary.liveinpeace.R
+import com.maary.liveinpeace.activity.WelcomeActivity
 import com.maary.liveinpeace.database.PreferenceRepository
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -64,60 +65,43 @@ class QSTileService: TileService() {
         serviceScope.cancel()
     }
 
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onClick() {
         super.onClick()
         val tile = qsTile
-        var waitMillis = REQUESTING_WAIT_MILLIS
 
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-
-        while(ActivityCompat.checkSelfPermission(
-                applicationContext,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.v("MUTE_", waitMillis.toString())
-            requestNotificationsPermission()
-            Thread.sleep(waitMillis.toLong())
-            waitMillis *= 2
+        var intent = Intent(this, WelcomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-
-        val intent = Intent(this, ForegroundService::class.java)
-
-
         serviceScope.launch {
-            preferenceRepository.isWelcomeFinished().collect {
-                if (!it) {
-                    //todo: redirect to welcome activity/screen
-                    if ( powerManager.isIgnoringBatteryOptimizations(packageName) &&
-                        ActivityCompat.checkSelfPermission(
-                            applicationContext, Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED) {
-                        preferenceRepository.setWelcomeFinished(true)
-                    } else {
-                        createWelcomeNotification()
-                        Thread.sleep(waitMillis.toLong())
-                        waitMillis *= 2
-                    }
+            if (!preferenceRepository.isWelcomeFinished().first()) {
+                val pendingIntent = PendingIntent.getActivity(
+                    this@QSTileService,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startActivityAndCollapse(pendingIntent)
+                } else {
+                    startActivityAndCollapse(intent)
                 }
+                return@launch
             }
-
+            intent = Intent(this@QSTileService, ForegroundService::class.java)
             if (preferenceRepository.isServiceRunning().first()) {
                 stopService(intent)
                 preferenceRepository.setServiceRunning(false)
                 updateTileState(false)
                 tile.updateTile()
-
             } else {
                 startForegroundService(intent)
                 preferenceRepository.setServiceRunning(true)
                 updateTileState(true)
                 tile.updateTile()
-
             }
         }
-
         tile.updateTile()
     }
 
@@ -163,61 +147,5 @@ class QSTileService: TileService() {
             tile.label = getString(R.string.qstile_inactive)
         }
         tile.updateTile()
-    }
-
-    private fun createNotificationChannel(importance:Int, id: String ,name:String, descriptionText: String) {
-        //val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel(id, name, importance).apply {
-            description = descriptionText
-        }
-        // Register the channel with the system
-        val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
-    }
-
-    private fun requestNotificationsPermission() {
-        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-        }
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startActivityAndCollapse(pendingIntent)
-        }
-    }
-
-    @SuppressLint("BatteryLife")
-    private fun createWelcomeNotification() {
-        Log.v("MUTE_", "CREATING WELCOME")
-        val welcome = NotificationCompat.Builder(this, CHANNEL_ID_WELCOME)
-            .setOngoing(true)
-            .setSmallIcon(R.drawable.ic_baseline_settings_24)
-            .setShowWhen(false)
-            .setContentTitle(getString(R.string.welcome))
-            .setContentText(getString(R.string.welcome_description))
-            .setOnlyAlertOnce(true)
-            .setGroupSummary(false)
-            .setGroup(ID_NOTIFICATION_GROUP_SETTINGS)
-
-        val batteryIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-        batteryIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            .data = Uri.parse("package:$packageName")
-
-        val pendingBatteryIntent = PendingIntent.getActivity(this, 0, batteryIntent, PendingIntent.FLAG_IMMUTABLE)
-
-        val batteryAction = NotificationCompat.Action.Builder(
-            R.drawable.outline_battery_saver_24,
-            getString(R.string.request_permission_battery),
-            pendingBatteryIntent
-        ).build()
-
-        welcome.addAction(batteryAction)
-
-        val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        notificationManager.notify(ID_NOTIFICATION_WELCOME, welcome.build())
-
     }
 }
