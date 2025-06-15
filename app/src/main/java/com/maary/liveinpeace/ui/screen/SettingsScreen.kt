@@ -1,6 +1,7 @@
 package com.maary.liveinpeace.ui.screen
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
@@ -56,6 +57,7 @@ import com.maary.liveinpeace.viewmodel.SettingsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
+import com.maary.liveinpeace.activity.HistoryActivity
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
@@ -89,13 +91,23 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                     Text(stringResource(R.string.app_name))
                 },
                 navigationIcon = {
-                    IconButton(onClick = { /* TODO: exit activity */ }) {
+                    IconButton(onClick = {
+                        //exit the settings screen
+                        // this could be a popBackStack or finish depending on your navigation setup
+                        // For example, if using Jetpack Navigation:
+                         (context as? Activity)?.finish()
+                        // If using a navigation component, you might want to use:
+                        // navController.popBackStack()
+                    }) {
                         Icon(imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.exit))
                     }
                 },
                 actions = {
-                    IconButton(onClick = {/* TODO: open history activity*/} ) {
+                    IconButton(onClick = {
+                        val intent = Intent(context, HistoryActivity::class.java)
+                        context.startActivity(intent)
+                    } ) {
                         Icon(painter = painterResource(R.drawable.ic_action_history),
                             contentDescription = stringResource(R.string.connections_history))
                     }
