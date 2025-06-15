@@ -1,4 +1,4 @@
-package com.maary.liveinpeace
+package com.maary.liveinpeace.activity
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -16,10 +16,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.maary.liveinpeace.ConnectionListAdapter
 import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_CONNECTIONS_UPDATE
 import com.maary.liveinpeace.Constants.Companion.EXTRA_CONNECTIONS_LIST
 import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_BUTTON
 import com.maary.liveinpeace.Constants.Companion.PATTERN_DATE_DATABASE
+import com.maary.liveinpeace.LiveInPeaceApplication
+import com.maary.liveinpeace.R
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.databinding.ActivityHistoryBinding
 import com.maary.liveinpeace.viewmodel.ConnectionViewModel
