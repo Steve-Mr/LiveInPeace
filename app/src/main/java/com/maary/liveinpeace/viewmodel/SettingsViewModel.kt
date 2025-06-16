@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.maary.liveinpeace.Constants.Companion.EAR_PROTECTION_LOWER_THRESHOLD
@@ -14,14 +13,9 @@ import com.maary.liveinpeace.service.ForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -90,7 +84,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    val showIconState: StateFlow<Boolean> = preferenceRepository.isHideInLauncher()
+    val showIconState: StateFlow<Boolean> = preferenceRepository.isIconShown()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun toggleShowIcon() {
@@ -108,7 +102,7 @@ class SettingsViewModel @Inject constructor(
             packageManager.setComponentEnabledSetting(componentName, enabledState, PackageManager.DONT_KILL_APP)
 
             // 2. 将新状态通知 Repository
-            preferenceRepository.setShowIcon()
+            preferenceRepository.toggleIconVisibility()
         }
     }
 

@@ -9,13 +9,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.maary.liveinpeace.Constants
-import com.maary.liveinpeace.Constants.Companion.MODE_IMG
-import com.maary.liveinpeace.Constants.Companion.MODE_NUM
-import com.maary.liveinpeace.Constants.Companion.PREF_ENABLE_EAR_PROTECTION
-import com.maary.liveinpeace.Constants.Companion.PREF_ICON
-import com.maary.liveinpeace.Constants.Companion.PREF_SERVICE_RUNNING
-import com.maary.liveinpeace.Constants.Companion.PREF_WATCHING_CONNECTING_TIME
-import com.maary.liveinpeace.Constants.Companion.PREF_WELCOME_FINISHED
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -39,7 +32,7 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
         val PREF_ENABLE_EAR_PROTECTION = booleanPreferencesKey(Constants.PREF_ENABLE_EAR_PROTECTION)
         val PREF_WELCOME_FINISHED = booleanPreferencesKey(Constants.PREF_WELCOME_FINISHED)
         val PREF_SERVICE_RUNNING = booleanPreferencesKey(Constants.PREF_SERVICE_RUNNING)
-        val PREF_HIDE_IN_LAUNCHER = booleanPreferencesKey(Constants.PREF_HIDE_IN_LAUNCHER)
+        val PREF_VISIBLE_IN_LAUNCHER = booleanPreferencesKey(Constants.PREF_HIDE_IN_LAUNCHER)
         val PREF_EAR_PROTECTION_THRESHOLD_MAX = intPreferencesKey(Constants.PREF_EAR_PROTECTION_THRESHOLD_MAX)
         val PREF_EAR_PROTECTION_THRESHOLD_MIN = intPreferencesKey(Constants.PREF_EAR_PROTECTION_THRESHOLD_MIN)
     }
@@ -92,29 +85,16 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
         }
     }
 
-    fun isHideInLauncher() : Flow<Boolean> {
+    fun isIconShown() : Flow<Boolean> {
         return datastore.data.map { pref ->
-            pref[PREF_HIDE_IN_LAUNCHER] ?: false
+            pref[PREF_VISIBLE_IN_LAUNCHER] ?: false
         }
     }
 
-    suspend fun setHideInLauncher(state: Boolean) {
+    suspend fun toggleIconVisibility() {
         datastore.edit { pref ->
-            pref[PREF_HIDE_IN_LAUNCHER] = state
-        }
-    }
-
-    fun isShowingIcon(): Flow<Boolean> {
-        return datastore.data.map { pref ->
-            val isHidden = pref[PREF_HIDE_IN_LAUNCHER] ?: true
-            !isHidden
-        }
-    }
-
-    suspend fun setShowIcon() {
-        datastore.edit { pref ->
-            val currentState = pref[PREF_HIDE_IN_LAUNCHER] ?: false
-            pref[PREF_HIDE_IN_LAUNCHER] = !currentState
+            val currentState = pref[PREF_VISIBLE_IN_LAUNCHER] ?: false
+            pref[PREF_VISIBLE_IN_LAUNCHER] = !currentState
         }
     }
 

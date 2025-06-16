@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -45,7 +43,7 @@ class WelcomeViewModel @Inject constructor(
         _isIgnoringBatteryOptimizations.value = powerManager.isIgnoringBatteryOptimizations(packageName)
     }
 
-    val showIconState: StateFlow<Boolean> = preferenceRepository.isHideInLauncher()
+    val showIconState: StateFlow<Boolean> = preferenceRepository.isIconShown()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun toggleShowIcon() {
@@ -63,7 +61,7 @@ class WelcomeViewModel @Inject constructor(
             packageManager.setComponentEnabledSetting(componentName, enabledState, PackageManager.DONT_KILL_APP)
 
             // 2. 将新状态通知 Repository
-            preferenceRepository.setShowIcon()
+            preferenceRepository.toggleIconVisibility()
         }
     }
 
