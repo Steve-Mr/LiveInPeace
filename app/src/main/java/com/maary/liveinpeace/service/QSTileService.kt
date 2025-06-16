@@ -108,14 +108,32 @@ class QSTileService: TileService() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onStartListening() {
         super.onStartListening()
-        // Update tile based on persisted state initially
+
+        // --- 核心校准逻辑开始 ---
+        // 每次磁贴可见时，检查持久化状态和内存状态是否一致
         serviceScope.launch {
-            updateTileState(preferenceRepository.isServiceRunning().first())
+            // 从 PreferenceRepository 读取“预期状态”
+            val expectedState = preferenceRepository.isServiceRunning().first()
+            // 直接从内存中读取服务的“实际状态”
+            val actualState = ForegroundService.isRunning
+            // 对比两个状态
+            if (expectedState && !actualState) {
+                // **发现不一致！**
+                // 记录显示服务在运行，但内存中它已停止。
+                // 这几乎可以肯定是服务被系统强杀了。
+                // 1. 修正错误的持久化记录
+                preferenceRepository.setServiceRunning(false)
+                // 2. 用修正后的、正确的状态（false）来更新磁贴外观
+                updateTileState(false)
+            } else {
+                // 状态一致，一切正常。直接按预期状态更新磁贴即可。
+                updateTileState(expectedState)
+            }
         }
+        // --- 核心校准逻辑结束 ---
 
         val intentFilter = IntentFilter()
         intentFilter.addAction(Constants.BROADCAST_ACTION_FOREGROUND)
-        // Use RECEIVER_NOT_EXPORTED for security with internal broadcasts
         registerReceiver(foregroundServiceReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
     }
 

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -38,6 +39,22 @@ class SettingsViewModel @Inject constructor(
             startForegroundService()
         } else {
             stopForegroundService()
+        }
+    }
+
+    private fun checkAndSyncServiceState() {
+        viewModelScope.launch {
+            // 获取预期的状态（来自持久化存储）
+            val expectedState = foregroundSwitchState.first()
+
+            // 获取服务的真实状态（来自内存）
+            val actualState = ForegroundService.isRunning
+
+            // 如果预期“开启”，但服务实际“停止”，说明服务曾被强杀
+            if (expectedState && !actualState) {
+                // -> 自动重新启动服务，以恢复到用户想要的开启状态
+                startForegroundService()
+            }
         }
     }
 
@@ -108,6 +125,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferenceRepository.setEarProtectionThreshold(range)
         }
+    }
+
+    init {
+        checkAndSyncServiceState()
     }
 
 }

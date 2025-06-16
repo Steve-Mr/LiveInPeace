@@ -60,6 +60,11 @@ import java.util.concurrent.ConcurrentHashMap
 class ForegroundService : Service() {
 
     companion object {
+
+        @Volatile
+        var isRunning = false
+            private set
+
         private const val TAG = "ForegroundService"
 
         // 为 PendingIntent 定义请求码常量，避免使用魔法数字
@@ -98,6 +103,7 @@ class ForegroundService : Service() {
         // 启动前台服务，并立即更新一次通知状态
         startForegroundWithNotification()
         setServiceRunningState(true)
+        isRunning = true
 
         Log.d(TAG, "Service created successfully.")
     }
@@ -147,6 +153,7 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         Log.d(TAG, "Service destroying...")
 
+        isRunning=false
         // 在清理资源前，先更新服务状态
         setServiceRunningState(false)
 
