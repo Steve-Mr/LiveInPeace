@@ -13,9 +13,12 @@ import com.maary.liveinpeace.service.ForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -42,22 +45,25 @@ class WelcomeViewModel @Inject constructor(
         _isIgnoringBatteryOptimizations.value = powerManager.isIgnoringBatteryOptimizations(packageName)
     }
 
-    private val _showIconState = MutableStateFlow(false)
-    val showIconState = _showIconState.asStateFlow()
+    val showIconState: StateFlow<Boolean> = preferenceRepository.isHideInLauncher()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun toggleShowIcon() {
         viewModelScope.launch {
+            val newState = !showIconState.value
+
+            // 1. 执行系统操作
             val packageManager = application.packageManager
             val componentName = ComponentName(application, "${application.packageName}.MainActivityAlias")
-
-            val newState = if(!_showIconState.value) {
+            val enabledState = if (newState) {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
             } else {
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             }
-            packageManager.setComponentEnabledSetting(componentName, newState, PackageManager.DONT_KILL_APP)
-            _showIconState.value = !_showIconState.value
-            preferenceRepository.setShowIcon(_showIconState.value)
+            packageManager.setComponentEnabledSetting(componentName, enabledState, PackageManager.DONT_KILL_APP)
+
+            // 2. 将新状态通知 Repository
+            preferenceRepository.setShowIcon()
         }
     }
 
@@ -69,9 +75,4 @@ class WelcomeViewModel @Inject constructor(
         startForegroundService(application, intent)
     }
 
-    init {
-        preferenceRepository.isShowingIcon().onEach {
-            _showIconState.value = it
-        }.launchIn(viewModelScope)
-    }
 }
