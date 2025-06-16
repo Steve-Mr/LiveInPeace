@@ -267,55 +267,33 @@ private fun ValueIndicatorThumb(
     }
 }
 
-@Composable
-fun TopBox(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp)
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
-        contentAlignment = Alignment.Center
-    ) {
-        content()
-    }
+// 定义设置项在分组中的位置
+enum class GroupPosition {
+    TOP,    // 顶部
+    MIDDLE, // 中间
+    BOTTOM, // 底部
+    SINGLE  // 独立，自成一组
 }
 
 @Composable
-fun MiddleBox(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp)
-            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
-        contentAlignment = Alignment.Center
-    ) {
-        content()
+fun SettingsItem(
+    position: GroupPosition,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    // 根据 position 决定圆角形状
+    val shape = when (position) {
+        GroupPosition.TOP -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+        GroupPosition.MIDDLE -> RoundedCornerShape(4.dp)
+        GroupPosition.BOTTOM -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+        GroupPosition.SINGLE -> RoundedCornerShape(24.dp) // 上下都是大圆角
     }
-}
 
-@Composable
-fun BottomBox(content: @Composable () -> Unit) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 2.dp)
-            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
-        contentAlignment = Alignment.Center
-    ) {
-        content()
-    }
-}
-
-@Composable
-fun StandaloneBox(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(shape) // 动态应用形状
             .background(MaterialTheme.colorScheme.surfaceContainerLow),
         contentAlignment = Alignment.Center
     ) {

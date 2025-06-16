@@ -131,7 +131,7 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
                         fontWeight = FontWeight.Bold,
                     )
                 )
-                StandaloneBox {
+                SettingsItem(GroupPosition.SINGLE) {
                     SwitchRow(
                         title = stringResource(R.string.notification_permission),
                         description = stringResource(R.string.notification_permission_description),
@@ -147,7 +147,7 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
                         fontWeight = FontWeight.Bold
                     )
                 )
-                TopBox {
+                SettingsItem(GroupPosition.TOP) {
                     SwitchRow(
                         title = stringResource(R.string.disable_battery_optimization),
                         description = stringResource(R.string.disable_battery_optimization_description),
@@ -160,7 +160,7 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
                         context.startActivity(batteryIntent)
                     }
                 }
-                BottomBox {
+                SettingsItem(GroupPosition.BOTTOM) {
                     SwitchRow(
                         title = stringResource(R.string.show_icon),
                         description = stringResource(R.string.show_icon_description),
