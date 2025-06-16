@@ -8,6 +8,12 @@ import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -132,6 +138,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
              * 4. 隐藏桌面图标
              * */
 
+            val isProtectionOn by settingsViewModel.protectionSwitchState.collectAsState()
+
             EnableForegroundRow(
                 state = settingsViewModel.foregroundSwitchState.collectAsState().value,
                 onCheckedChange = { settingsViewModel.foregroundSwitch() },
@@ -153,15 +161,18 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
             SwitchRow(
                 title = stringResource(R.string.protection),
                 description = stringResource(R.string.protection) /* todo */,
-                state = settingsViewModel.protectionSwitchState.collectAsState().value,
+                state = isProtectionOn,
                 onCheckedChange = { settingsViewModel.protectionSwitch() }
             )
 
-            ThresholdSlider(
-                title = stringResource(id = R.string.safe_volume_threshold),
-                range = settingsViewModel.earProtectionThreshold.collectAsState().value,
-                onValueChangeFinished = { settingsViewModel.setEarProtectionThreshold(it) },
-            )
+            // 使用 AnimatedVisibility 包裹需要条件显示的组件
+            AnimatedVisibility(visible = isProtectionOn) {
+                ThresholdSlider(
+                    title = stringResource(id = R.string.safe_volume_threshold),
+                    range = settingsViewModel.earProtectionThreshold.collectAsState().value,
+                    onValueChangeFinished = { settingsViewModel.setEarProtectionThreshold(it) },
+                )
+            }
 
             SwitchRow(
                 title = stringResource(R.string.show_icon),
