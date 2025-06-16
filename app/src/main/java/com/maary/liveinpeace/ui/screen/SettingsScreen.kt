@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -154,6 +155,12 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                 description = stringResource(R.string.protection) /* todo */,
                 state = settingsViewModel.protectionSwitchState.collectAsState().value,
                 onCheckedChange = { settingsViewModel.protectionSwitch() }
+            )
+
+            ThresholdSlider(
+                title = stringResource(id = R.string.safe_volume_threshold),
+                range = settingsViewModel.earProtectionThreshold.collectAsState().value,
+                onValueChangeFinished = { settingsViewModel.setEarProtectionThreshold(it) },
             )
 
             SwitchRow(

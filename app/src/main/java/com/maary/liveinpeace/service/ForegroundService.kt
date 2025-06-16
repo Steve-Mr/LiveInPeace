@@ -21,6 +21,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants
+import com.maary.liveinpeace.Constants.Companion.EAR_PROTECTION_LOWER_THRESHOLD
+import com.maary.liveinpeace.Constants.Companion.EAR_PROTECTION_UPPER_THRESHOLD
 import com.maary.liveinpeace.DeviceTimer
 import com.maary.liveinpeace.activity.MainActivity
 import com.maary.liveinpeace.R
@@ -217,8 +219,6 @@ class ForegroundService : Service() {
      */
     private val audioDeviceCallback = object : AudioDeviceCallback() {
         private val CALLBACK_TAG = "AudioDeviceCallback"
-        private val EAR_PROTECTION_LOWER_THRESHOLD = 10
-        private val EAR_PROTECTION_UPPER_THRESHOLD = 25
         private val VOLUME_ADJUST_ATTEMPTS = 100
 
         private val IGNORED_DEVICE_TYPES = setOf(
@@ -348,12 +348,14 @@ class ForegroundService : Service() {
                     Log.d(CALLBACK_TAG, "Applying ear protection for $deviceName")
                     var protectionApplied = false
 
+                    val threshold = preferenceRepository.getEarProtectionThreshold().first()
+
                     // 调整音量到安全范围
-                    while (getVolumePercentage() > EAR_PROTECTION_UPPER_THRESHOLD && isActive) {
+                    while (getVolumePercentage() > threshold.last && isActive) {
                         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
                         protectionApplied = true
                     }
-                    while (getVolumePercentage() < EAR_PROTECTION_LOWER_THRESHOLD && isActive) {
+                    while (getVolumePercentage() < threshold.first && isActive) {
                         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
                         protectionApplied = true
                     }

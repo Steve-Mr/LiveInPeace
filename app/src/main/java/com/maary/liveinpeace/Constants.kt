@@ -19,6 +19,11 @@ class Constants {
         // SharedPreferences key for service running state
         const val PREF_SERVICE_RUNNING = "service_running_state"
         const val PREF_HIDE_IN_LAUNCHER = "hide_in_launcher"
+        const val PREF_EAR_PROTECTION_THRESHOLD_MAX = "ear_protection_max"
+        const val PREF_EAR_PROTECTION_THRESHOLD_MIN = "ear_protection_min"
+        const val PREF_EAR_PROTECTION_THRESHOLD = "ear_protection_threshold"
+        const val EAR_PROTECTION_LOWER_THRESHOLD = 10
+        const val EAR_PROTECTION_UPPER_THRESHOLD = 25
         // 设置通知 id
         const val ID_NOTIFICATION_SETTINGS = 3
         // 前台通知 id

@@ -19,6 +19,7 @@ import com.maary.liveinpeace.Constants.Companion.PREF_WELCOME_FINISHED
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -39,6 +40,8 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
         val PREF_WELCOME_FINISHED = booleanPreferencesKey(Constants.PREF_WELCOME_FINISHED)
         val PREF_SERVICE_RUNNING = booleanPreferencesKey(Constants.PREF_SERVICE_RUNNING)
         val PREF_HIDE_IN_LAUNCHER = booleanPreferencesKey(Constants.PREF_HIDE_IN_LAUNCHER)
+        val PREF_EAR_PROTECTION_THRESHOLD_MAX = intPreferencesKey(Constants.PREF_EAR_PROTECTION_THRESHOLD_MAX)
+        val PREF_EAR_PROTECTION_THRESHOLD_MIN = intPreferencesKey(Constants.PREF_EAR_PROTECTION_THRESHOLD_MIN)
     }
 
     fun getWatchingState(): Flow<Boolean> {
@@ -108,9 +111,38 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
         }
     }
 
-    suspend fun setShowIcon(state: Boolean) {
+    suspend fun setShowIcon() {
         datastore.edit { pref ->
-            pref[PREF_HIDE_IN_LAUNCHER] = !state
+            val currentState = pref[PREF_HIDE_IN_LAUNCHER] ?: false
+            pref[PREF_HIDE_IN_LAUNCHER] = !currentState
+        }
+    }
+
+    private fun getEarProtectionThresholdMax() : Flow<Int> {
+        return datastore.data.map { pref ->
+            pref[PREF_EAR_PROTECTION_THRESHOLD_MAX] ?: Constants.EAR_PROTECTION_UPPER_THRESHOLD
+        }
+    }
+
+    private fun getEarProtectionThresholdMin() : Flow<Int> {
+        return datastore.data.map { pref ->
+            pref[PREF_EAR_PROTECTION_THRESHOLD_MIN] ?: Constants.EAR_PROTECTION_LOWER_THRESHOLD
+        }
+    }
+
+    fun getEarProtectionThreshold(): Flow<IntRange> {
+        return combine(
+            getEarProtectionThresholdMin(),
+            getEarProtectionThresholdMax()
+        ) { min, max ->
+            min..max
+        }
+    }
+
+    suspend fun setEarProtectionThreshold(range: IntRange) {
+        datastore.edit { pref ->
+            pref[PREF_EAR_PROTECTION_THRESHOLD_MIN] = range.first
+            pref[PREF_EAR_PROTECTION_THRESHOLD_MAX] = range.last
         }
     }
 }

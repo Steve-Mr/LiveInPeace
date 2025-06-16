@@ -91,7 +91,22 @@ class SettingsViewModel @Inject constructor(
             packageManager.setComponentEnabledSetting(componentName, enabledState, PackageManager.DONT_KILL_APP)
 
             // 2. 将新状态通知 Repository
-            preferenceRepository.setShowIcon(newState)
+            preferenceRepository.setShowIcon()
+        }
+    }
+
+    val earProtectionThreshold: StateFlow<IntRange> = preferenceRepository.getEarProtectionThreshold()
+        .stateIn(
+            scope = viewModelScope,
+            // 当 UI 订阅时开始收集数据，并在最后一个订阅者消失 5 秒后停止，以节省资源
+            started = SharingStarted.WhileSubscribed(5000),
+            // 提供一个初始值，它只在仓库的真实值返回之前短暂使用
+            initialValue = EAR_PROTECTION_LOWER_THRESHOLD..EAR_PROTECTION_UPPER_THRESHOLD
+        )
+
+    fun setEarProtectionThreshold(range: IntRange) {
+        viewModelScope.launch {
+            preferenceRepository.setEarProtectionThreshold(range)
         }
     }
 
