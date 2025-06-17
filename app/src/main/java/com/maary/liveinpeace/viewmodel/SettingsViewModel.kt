@@ -30,9 +30,9 @@ class SettingsViewModel @Inject constructor(
 
     fun foregroundSwitch() {
         if(!foregroundSwitchState.value) {
-            startForegroundService()
+            enableForegroundService()
         } else {
-            stopForegroundService()
+            disableForegroundService()
         }
     }
 
@@ -47,22 +47,24 @@ class SettingsViewModel @Inject constructor(
             // 如果预期“开启”，但服务实际“停止”，说明服务曾被强杀
             if (expectedState && !actualState) {
                 // -> 自动重新启动服务，以恢复到用户想要的开启状态
-                startForegroundService()
+                enableForegroundService()
             }
         }
     }
 
-    private fun startForegroundService() {
+    private fun enableForegroundService() {
         viewModelScope.launch {
             val intent = Intent(application, ForegroundService::class.java)
             application.startForegroundService(intent)
+            preferenceRepository.setServiceRunning(true)
         }
     }
 
-    private fun stopForegroundService() {
+    private fun disableForegroundService() {
         viewModelScope.launch {
             val intent = Intent(application, ForegroundService::class.java)
             application.stopService(intent)
+            preferenceRepository.setServiceRunning(false)
         }
     }
 
