@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -59,6 +61,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.maary.liveinpeace.ui.theme.Typography
 import com.maary.liveinpeace.R
@@ -73,7 +78,7 @@ import com.maary.liveinpeace.activity.HistoryActivity
 @Composable
 fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val context = LocalContext.current
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -91,13 +96,20 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
     Scaffold (
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MediumTopAppBar(
+            TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = MaterialTheme.colorScheme.inversePrimary,
                     titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                    actionIconContentColor = MaterialTheme.colorScheme.primary
                 ),
                 title = {
-                    Text(stringResource(R.string.app_name))
+                    Text(stringResource(R.string.app_name),
+                        style = Typography.titleLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            fontStyle = FontStyle.Italic
+                        )
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = {
@@ -128,13 +140,14 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = innerPadding.calculateTopPadding())
                 .verticalScroll(rememberScrollState())
+                .background(MaterialTheme.colorScheme.inversePrimary)
         ){
 
             /**
              * 1. 启用状态
              * 2. 提醒状态
+             * 2.1 提醒时间 todo
              * 3. 音量保护
              * 3.1 安全音量阈值
              * 4. 隐藏桌面图标
@@ -143,18 +156,21 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
             val isProtectionOn by settingsViewModel.protectionSwitchState.collectAsState()
             val isForegroundEnabled by settingsViewModel.foregroundSwitchState.collectAsState()
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp + innerPadding.calculateTopPadding()))
 
-            SettingsItem( position = if (isForegroundEnabled) GroupPosition.TOP else GroupPosition.SINGLE) {
+            SettingsItem(
+                position = if (isForegroundEnabled) GroupPosition.TOP else GroupPosition.SINGLE,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
                 SwitchRow(
                     title = stringResource(id = R.string.default_channel),
-                    description = stringResource(id = R.string.default_channel_description),
                     state = isForegroundEnabled,
-                    onCheckedChange = { settingsViewModel.foregroundSwitch() })
+                    onCheckedChange = { settingsViewModel.foregroundSwitch() },
+                    switchColor = MaterialTheme.colorScheme.tertiary)
             }
 
             AnimatedVisibility(visible = isForegroundEnabled) {
-                SettingsItem(GroupPosition.BOTTOM) {
+                SettingsItem( position = GroupPosition.BOTTOM,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
                     TextContent(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -173,7 +189,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SettingsItem(GroupPosition.TOP) {
+            SettingsItem(GroupPosition.TOP,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer) {
                 SwitchRow(
                     title = stringResource(R.string.enable_watching),
                     description = stringResource(R.string.enable_watching) /* todo */,
@@ -182,7 +199,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                 )
             }
 
-            SettingsItem(GroupPosition.MIDDLE) {
+            SettingsItem(GroupPosition.MIDDLE,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer) {
                 SwitchRow(
                     title = stringResource(R.string.protection),
                     description = stringResource(R.string.protection) /* todo */,
@@ -193,7 +211,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
 
             // 使用 AnimatedVisibility 包裹需要条件显示的组件
             AnimatedVisibility(visible = isProtectionOn) {
-                SettingsItem(GroupPosition.MIDDLE) {
+                SettingsItem(GroupPosition.MIDDLE,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer) {
                     ThresholdSlider(
                         title = stringResource(id = R.string.safe_volume_threshold),
                         range = settingsViewModel.earProtectionThreshold.collectAsState().value,
@@ -202,7 +221,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                 }
             }
 
-            SettingsItem(GroupPosition.BOTTOM) {
+            SettingsItem(GroupPosition.BOTTOM,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer) {
                 SwitchRow(
                     title = stringResource(R.string.show_icon),
                     description = stringResource(R.string.show_icon_description),

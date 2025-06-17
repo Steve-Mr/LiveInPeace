@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.util.toRange
@@ -50,17 +53,19 @@ import com.maary.liveinpeace.ui.theme.Typography
 import com.maary.liveinpeace.R
 
 @Composable
-fun TextContent(modifier: Modifier = Modifier, title: String, description: String) {
+fun TextContent(modifier: Modifier = Modifier, title: String, description: String? = null) {
     Column(modifier = modifier){
         Text(
             title,
             style = Typography.titleLarge
         )
-        Text(
-            description,
-            style = Typography.bodySmall,
-            maxLines = 5
-        )
+        if (description != null) {
+            Text(
+                description,
+                style = Typography.bodySmall,
+                maxLines = 5
+            )
+        }
     }
 }
 
@@ -114,8 +119,9 @@ fun DropdownItem(modifier: Modifier, options: MutableList<String>, position: Int
 @Composable
 fun SwitchRow(
     title: String,
-    description: String,
+    description: String? = null,
     state: Boolean,
+    switchColor: Color = MaterialTheme.colorScheme.secondary,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
@@ -127,31 +133,8 @@ fun SwitchRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         TextContent(modifier = Modifier.weight(1f), title = title, description = description)
-        Switch(checked = state, onCheckedChange = onCheckedChange)
-    }
-}
-
-@Composable
-fun EnableForegroundRow(
-    state: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    onNotificationSettingsClicked: () -> Unit
-) {
-    Column {
-        SwitchRow(
-            title = stringResource(id = R.string.default_channel),
-            description = stringResource(id = R.string.default_channel_description),
-            state = state,
-            onCheckedChange = onCheckedChange)
-        if (state) {
-            TextContent(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNotificationSettingsClicked() }
-                    .padding(start = 32.dp, top = 8.dp, end = 32.dp, bottom = 8.dp),
-                title = stringResource(id = R.string.notification_settings),
-                description = stringResource(R.string.notification_settings_description))
-        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Switch(checked = state, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedTrackColor = switchColor))
     }
 }
 
@@ -201,6 +184,7 @@ fun ThresholdSlider(title: String, range: IntRange, onValueChangeFinished: (IntR
         }
 
         RangeSlider(
+            modifier = Modifier.fillMaxWidth(),
             value = sliderPosition,
             steps = 0,
             onValueChange = { newRange ->
@@ -226,7 +210,16 @@ fun ThresholdSlider(title: String, range: IntRange, onValueChangeFinished: (IntR
                     value = sliderPosition.endInclusive,
                     enabled = true
                 )
-            }
+            },
+            colors = SliderDefaults.colors(
+                activeTrackColor = MaterialTheme.colorScheme.secondary,
+//                thumbColor = MaterialTheme.colorScheme.secondary,
+                inactiveTrackColor = MaterialTheme.colorScheme.onSecondary,
+//                activeTickColor = MaterialTheme.colorScheme.onSecondaryContainer,
+//                inactiveTickColor = MaterialTheme.colorScheme.onSecondaryContainer,
+//                disabledActiveTickColor = MaterialTheme.colorScheme.onSecondaryContainer,
+//                disabledInactiveTickColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
         )
     }
 }
@@ -237,8 +230,8 @@ private fun ValueIndicatorThumb(
     enabled: Boolean
 ) {
     // 根据可用状态选择颜色
-    val indicatorColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    val textColor = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.surface
+    val indicatorColor = if (enabled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    val textColor = if (enabled) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.surface
 
     // 使用 Column 垂直排列指示器和滑块
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -253,7 +246,8 @@ private fun ValueIndicatorThumb(
                 text = "%.0f".format(value), // 将数值格式化为整数
                 color = textColor,
                 style = MaterialTheme.typography.labelSmall, // 使用 MD3 的字体样式
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(24.dp).padding(horizontal = 4.dp, vertical = 2.dp)
             )
         }
 
@@ -279,6 +273,7 @@ enum class GroupPosition {
 fun SettingsItem(
     position: GroupPosition,
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
     content: @Composable () -> Unit
 ) {
     // 根据 position 决定圆角形状
@@ -294,7 +289,7 @@ fun SettingsItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 2.dp)
             .clip(shape) // 动态应用形状
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+            .background(containerColor),
         contentAlignment = Alignment.Center
     ) {
         content()
