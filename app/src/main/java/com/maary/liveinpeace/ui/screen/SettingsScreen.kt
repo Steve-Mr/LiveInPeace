@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
@@ -139,48 +141,74 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
              * */
 
             val isProtectionOn by settingsViewModel.protectionSwitchState.collectAsState()
+            val isForegroundEnabled by settingsViewModel.foregroundSwitchState.collectAsState()
 
-            EnableForegroundRow(
-                state = settingsViewModel.foregroundSwitchState.collectAsState().value,
-                onCheckedChange = { settingsViewModel.foregroundSwitch() },
-                onNotificationSettingsClicked = {
-                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    }
-                    context.startActivity(intent)
-                },
-            )
+            SettingsItem( position = if (isForegroundEnabled) GroupPosition.TOP else GroupPosition.SINGLE) {
+                SwitchRow(
+                    title = stringResource(id = R.string.default_channel),
+                    description = stringResource(id = R.string.default_channel_description),
+                    state = isForegroundEnabled,
+                    onCheckedChange = { settingsViewModel.foregroundSwitch() })
+            }
 
-            SwitchRow(
-                title = stringResource(R.string.enable_watching),
-                description = stringResource(R.string.enable_watching) /* todo */,
-                state = settingsViewModel.alertSwitchState.collectAsState().value,
-                onCheckedChange = { settingsViewModel.alertSwitch() }
-            )
+            AnimatedVisibility(visible = isForegroundEnabled) {
+                SettingsItem(GroupPosition.BOTTOM) {
+                    TextContent(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                }
+                                context.startActivity(intent)
+                            }
+                            .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
+                        title = stringResource(id = R.string.notification_settings),
+                        description = stringResource(R.string.notification_settings_description)
+                    )
+                }
+            }
 
-            SwitchRow(
-                title = stringResource(R.string.protection),
-                description = stringResource(R.string.protection) /* todo */,
-                state = isProtectionOn,
-                onCheckedChange = { settingsViewModel.protectionSwitch() }
-            )
-
-            // 使用 AnimatedVisibility 包裹需要条件显示的组件
-            AnimatedVisibility(visible = isProtectionOn) {
-                ThresholdSlider(
-                    title = stringResource(id = R.string.safe_volume_threshold),
-                    range = settingsViewModel.earProtectionThreshold.collectAsState().value,
-                    onValueChangeFinished = { settingsViewModel.setEarProtectionThreshold(it) },
+            SettingsItem(GroupPosition.TOP) {
+                SwitchRow(
+                    title = stringResource(R.string.enable_watching),
+                    description = stringResource(R.string.enable_watching) /* todo */,
+                    state = settingsViewModel.alertSwitchState.collectAsState().value,
+                    onCheckedChange = { settingsViewModel.alertSwitch() }
                 )
             }
 
-            SwitchRow(
-                title = stringResource(R.string.show_icon),
-                description = stringResource(R.string.show_icon_description),
-                state = settingsViewModel.showIconState.collectAsState().value,
-            ) {
-                settingsViewModel.toggleShowIcon()
+            SettingsItem(GroupPosition.MIDDLE) {
+                SwitchRow(
+                    title = stringResource(R.string.protection),
+                    description = stringResource(R.string.protection) /* todo */,
+                    state = isProtectionOn,
+                    onCheckedChange = { settingsViewModel.protectionSwitch() }
+                )
             }
+
+            // 使用 AnimatedVisibility 包裹需要条件显示的组件
+            AnimatedVisibility(visible = isProtectionOn) {
+                SettingsItem(GroupPosition.MIDDLE) {
+                    ThresholdSlider(
+                        title = stringResource(id = R.string.safe_volume_threshold),
+                        range = settingsViewModel.earProtectionThreshold.collectAsState().value,
+                        onValueChangeFinished = { settingsViewModel.setEarProtectionThreshold(it) },
+                    )
+                }
+            }
+
+            SettingsItem(GroupPosition.BOTTOM) {
+                SwitchRow(
+                    title = stringResource(R.string.show_icon),
+                    description = stringResource(R.string.show_icon_description),
+                    state = settingsViewModel.showIconState.collectAsState().value,
+                ) {
+                    settingsViewModel.toggleShowIcon()
+                }
+            }
+
+            Spacer(modifier = Modifier.height(innerPadding.calculateBottomPadding()))
         }
     }
 }
