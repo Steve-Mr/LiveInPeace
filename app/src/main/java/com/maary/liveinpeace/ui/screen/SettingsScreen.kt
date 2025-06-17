@@ -143,6 +143,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
             val isProtectionOn by settingsViewModel.protectionSwitchState.collectAsState()
             val isForegroundEnabled by settingsViewModel.foregroundSwitchState.collectAsState()
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             SettingsItem( position = if (isForegroundEnabled) GroupPosition.TOP else GroupPosition.SINGLE) {
                 SwitchRow(
                     title = stringResource(id = R.string.default_channel),
@@ -168,6 +170,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             SettingsItem(GroupPosition.TOP) {
                 SwitchRow(
