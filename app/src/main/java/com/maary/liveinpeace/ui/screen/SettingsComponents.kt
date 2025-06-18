@@ -173,7 +173,8 @@ fun ThresholdSlider(title: String, range: IntRange, onValueChangeFinished: (IntR
             text = title,
             style = Typography.titleMedium,
             modifier = Modifier
-                .padding(top = 8.dp, bottom = 8.dp)
+                .padding(bottom = 8.dp),
+            color = MaterialTheme.colorScheme.secondary
         )
 
         // 内部状态的初始化逻辑保持不变

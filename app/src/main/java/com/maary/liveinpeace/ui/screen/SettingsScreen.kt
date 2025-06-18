@@ -194,7 +194,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                 containerColor = MaterialTheme.colorScheme.secondaryContainer) {
                 SwitchRow(
                     title = stringResource(R.string.enable_watching),
-                    description = stringResource(R.string.enable_watching) /* todo */,
+                    description = stringResource(R.string.enable_watching_detail),
                     state = settingsViewModel.alertSwitchState.collectAsState().value,
                     onCheckedChange = { settingsViewModel.alertSwitch() }
                 )
@@ -204,7 +204,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                 containerColor = MaterialTheme.colorScheme.secondaryContainer) {
                 SwitchRow(
                     title = stringResource(R.string.protection),
-                    description = stringResource(R.string.protection) /* todo */,
+                    description = stringResource(R.string.protection_detail),
                     state = isProtectionOn,
                     onCheckedChange = { settingsViewModel.protectionSwitch() }
                 )
