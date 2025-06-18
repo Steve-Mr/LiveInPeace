@@ -53,17 +53,19 @@ import com.maary.liveinpeace.ui.theme.Typography
 import com.maary.liveinpeace.R
 
 @Composable
-fun TextContent(modifier: Modifier = Modifier, title: String, description: String? = null) {
+fun TextContent(modifier: Modifier = Modifier, title: String, description: String? = null, color: Color = MaterialTheme.colorScheme.secondary) {
     Column(modifier = modifier){
         Text(
             title,
-            style = Typography.titleLarge
+            style = Typography.titleLarge,
+            color = color,
         )
         if (description != null) {
             Text(
                 description,
                 style = Typography.bodySmall,
-                maxLines = 5
+                maxLines = 5,
+                color = color
             )
         }
     }
@@ -132,7 +134,7 @@ fun SwitchRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TextContent(modifier = Modifier.weight(1f), title = title, description = description)
+        TextContent(modifier = Modifier.weight(1f), title = title, description = description, color = switchColor)
         Spacer(modifier = Modifier.width(8.dp))
         Switch(checked = state, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedTrackColor = switchColor))
     }

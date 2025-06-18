@@ -182,7 +182,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                             }
                             .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
                         title = stringResource(id = R.string.notification_settings),
-                        description = stringResource(R.string.notification_settings_description)
+                        description = stringResource(R.string.notification_settings_description),
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
             }
