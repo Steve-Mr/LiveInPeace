@@ -44,6 +44,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,6 +54,8 @@ import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.maary.liveinpeace.activity.MainActivity
+import com.maary.liveinpeace.ui.theme.Typography
 
 @SuppressLint("BatteryLife")
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -101,8 +104,9 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
         topBar = {
             LargeTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary),
+                    containerColor = MaterialTheme.colorScheme.inversePrimary,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary),
                 title = {
                     Text(stringResource(R.string.welcome))
                 },
@@ -119,23 +123,26 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier.padding(top = innerPadding.calculateTopPadding())
-                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.inversePrimary)
                 .fillMaxSize()
         ) {
+            Spacer(modifier = Modifier.height(16.dp + innerPadding.calculateTopPadding()))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     text = stringResource(R.string.nessery_permissions),
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
-                    )
+                    ),
+                    color = MaterialTheme.colorScheme.primary
                 )
-                SettingsItem(GroupPosition.SINGLE) {
+                SettingsItem(GroupPosition.SINGLE , containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
                     SwitchRow(
                         title = stringResource(R.string.notification_permission),
                         description = stringResource(R.string.notification_permission_description),
                         state = hasNotificationPermission,
+                        switchColor = MaterialTheme.colorScheme.tertiary
                     ) {
                         permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                     }
@@ -145,7 +152,8 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
                     text = stringResource(R.string.optional_permissions),
                     style = TextStyle(
                         fontWeight = FontWeight.Bold
-                    )
+                    ),
+                    color = MaterialTheme.colorScheme.primary
                 )
                 SettingsItem(GroupPosition.TOP) {
                     SwitchRow(
@@ -177,7 +185,9 @@ fun WelcomeScreen(welcomeViewModel: WelcomeViewModel = viewModel()) {
                     enabled = hasNotificationPermission,
                     onClick = {
                         welcomeViewModel.welcomeFinished()
-                        (context as? Activity)?.finish()
+//                        (context as? Activity)?.finish()
+                        val intent = Intent(context, MainActivity::class.java)
+                        context.startActivity(intent)
                     }) {
                     Text(stringResource(R.string.finish))
                 }
