@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.maary.liveinpeace.BuildConfig
 import com.maary.liveinpeace.Constants
 import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -87,13 +88,13 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
 
     fun isIconShown() : Flow<Boolean> {
         return datastore.data.map { pref ->
-            pref[PREF_VISIBLE_IN_LAUNCHER] ?: false
+            pref[PREF_VISIBLE_IN_LAUNCHER] ?: BuildConfig.ICON_ENABLED
         }
     }
 
     suspend fun toggleIconVisibility() {
         datastore.edit { pref ->
-            val currentState = pref[PREF_VISIBLE_IN_LAUNCHER] ?: false
+            val currentState = pref[PREF_VISIBLE_IN_LAUNCHER] ?: BuildConfig.ICON_ENABLED
             pref[PREF_VISIBLE_IN_LAUNCHER] = !currentState
         }
     }
