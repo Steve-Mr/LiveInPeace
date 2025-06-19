@@ -141,12 +141,6 @@ jobs:
           echo "APK_FILE_UPLOAD2=$(find apks -name '*disabled-arm64*.apk')" >> $GITHUB_ENV
           ls ./apks
 
-      - name: Get Apk Info
-        id: apk
-        uses: JantHsueh/get-apk-info-action@master
-        with:
-          apkPath: ${{ env.APK_FILE_UPLOAD1 }}
-
       - name: Release
         run: |
           chmod +x telegram-bot-api-binary
