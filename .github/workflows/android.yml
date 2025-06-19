@@ -6,9 +6,7 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
       - name: set up JDK 17
@@ -19,53 +17,47 @@ jobs:
           cache: gradle
 
       - name: Storing key.properties
-        run: |
-          echo "${{ secrets.KEY_PROPERTIES }}" | base64 --decode > ./key.properties
-          ls ./
-          ls -l key.properties
+        run: echo "${{ secrets.KEY_PROPERTIES }}" | base64 --decode > ./key.properties
 
       - name: Storing keystore
-        run: |
-          echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./app/key.keystore
-          ls ./app
-          ls -l ./app/key.keystore
+        run: echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./app/key.keystore
 
-      - name: Storing keystore
-        run: |
-          echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./key.keystore
-          ls -l ./key.keystore
+      # 如果你的 keystore 路径在根目录，保留这个。如果只在 app/ 目录下，可以移除。
+      - name: Storing keystore in root
+        run: echo "${{ secrets.KEYSTORE }}" | base64 --decode > ./key.keystore
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Build with Gradle
-        run: |
-          ./gradlew :app:assembleRelease
-          
-          echo "APK_FILE=$(find app/build/outputs/apk -name '*arm64*.apk')" >> $GITHUB_ENV
-          echo "APK_FILE_ARMV7=$(find app/build/outputs/apk -name '*v7a*.apk')" >> $GITHUB_ENV
-          echo "APK_FILE_X86=$(find app/build/outputs/apk -name '*x86*.apk')" >> $GITHUB_ENV
-          echo "APK_FILE_X64=$(find app/build/outputs/apk -name '*x64*.apk')" >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@v2
-        name: Upload apk (arm64-v8a)
+      # Build with Gradle 命令不变，它会自动构建所有 flavors 和 ABIs
+      - name: Build with Gradle
+        run: ./gradlew :app:assembleRelease
+
+      # --- 修改开始：更新上传 Artifact 的逻辑 ---
+      - uses: actions/upload-artifact@v4
+        name: Upload APK (iconEnabled, arm64-v8a)
         with:
-          name: LiveInPeace-arm64-v8a
-          path: ${{ env.APK_FILE }}
-      - uses: actions/upload-artifact@v2
-        name: Upload apk (armeabi-v7a)
+          name: LiveInPeace-iconEnabled-arm64-v8a
+          path: app/build/outputs/apk/iconEnabled/release/LiveInPeace-iconEnabled-arm64-v8a-*.apk
+
+      - uses: actions/upload-artifact@v4
+        name: Upload APK (iconEnabled, universal)
         with:
-          name: LiveInPeace-armeabi-v7a
-          path: ${{ env.APK_FILE_ARMV7 }}
-      - uses: actions/upload-artifact@v2
-        name: Upload apk (x86_64)
+          name: LiveInPeace-iconEnabled-universal
+          path: app/build/outputs/apk/iconEnabled/release/LiveInPeace-iconEnabled-universal-*.apk
+
+      - uses: actions/upload-artifact@v4
+        name: Upload APK (iconDisabled, arm64-v8a)
         with:
-          name: LiveInPeace-x86_64
-          path: ${{ env.APK_FILE_X64 }}
-      - uses: actions/upload-artifact@v2
-        name: Upload apk (x86)
+          name: LiveInPeace-iconDisabled-arm64-v8a
+          path: app/build/outputs/apk/iconDisabled/release/LiveInPeace-iconDisabled-arm64-v8a-*.apk
+
+      - uses: actions/upload-artifact@v4
+        name: Upload APK (iconDisabled, universal)
         with:
-          name: LiveInPeace-x86
-          path: ${{ env.APK_FILE_X86 }}
+          name: LiveInPeace-iconDisabled-universal
+          path: app/build/outputs/apk/iconDisabled/release/LiveInPeace-iconDisabled-universal-*.apk
+      # --- 修改结束 ---
 
       - name: Create Release
         id: create_release
@@ -79,47 +71,48 @@ jobs:
           body: |
             ## Changes
             ${{ github.event.pull_request.body }}
-            ${{ steps.show_pr_commits.outputs.commits }}
 
+      # --- 修改开始：更新上传到 Release 的逻辑 ---
       - uses: actions/upload-release-asset@v1
-        name: Upload apk (arm64-v8a)
+        name: Upload Release APK (iconEnabled, arm64-v8a)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-arm64-v8a.apk
-          asset_path: ${{ env.APK_FILE }}
-          asset_content_type: application/zip
+          asset_path: app/build/outputs/apk/iconEnabled/release/LiveInPeace-iconEnabled-arm64-v8a-*.apk
+          asset_name: LiveInPeace-iconEnabled-arm64-v8a.apk
+          asset_content_type: application/vnd.android.package-archive
 
       - uses: actions/upload-release-asset@v1
-        name: Upload apk (armeabi-v7a)
+        name: Upload Release APK (iconEnabled, universal)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-armeabi-v7a.apk
-          asset_path: ${{ env.APK_FILE_ARMV7 }}
-          asset_content_type: application/zip
+          asset_path: app/build/outputs/apk/iconEnabled/release/LiveInPeace-iconEnabled-universal-*.apk
+          asset_name: LiveInPeace-iconEnabled-universal.apk
+          asset_content_type: application/vnd.android.package-archive
 
       - uses: actions/upload-release-asset@v1
-        name: Upload apk (x86_64)
+        name: Upload Release APK (iconDisabled, arm64-v8a)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-x86_64.apk
-          asset_path: ${{ env.APK_FILE_X64 }}
-          asset_content_type: application/zip
+          asset_path: app/build/outputs/apk/iconDisabled/release/LiveInPeace-iconDisabled-arm64-v8a-*.apk
+          asset_name: LiveInPeace-iconDisabled-arm64-v8a.apk
+          asset_content_type: application/vnd.android.package-archive
 
       - uses: actions/upload-release-asset@v1
-        name: Upload apk (x86)
+        name: Upload Release APK (iconDisabled, universal)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: LiveInPeace-x86.apk
-          asset_path: ${{ env.APK_FILE_X86 }}
-          asset_content_type: application/zip
+          asset_path: app/build/outputs/apk/iconDisabled/release/LiveInPeace-iconDisabled-universal-*.apk
+          asset_name: LiveInPeace-iconDisabled-universal.apk
+          asset_content_type: application/vnd.android.package-archive
+      # --- 修改结束 ---
 
   upload:
     name: Upload Release
@@ -129,11 +122,12 @@ jobs:
       - telegram-bot-api
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4 # 建议使用 v3
         with:
           path: artifacts
+
       - name: Download Telegram Bot API Binary
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: telegram-bot-api-binary
           path: .
@@ -176,7 +170,7 @@ jobs:
           git status telegram-bot-api >> telegram-bot-api-status
       - name: Cache Bot API Binary
         id: cache-bot-api
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: telegram-bot-api-binary
           key: CI-telegram-bot-api-${{ hashFiles('telegram-bot-api-status') }}
