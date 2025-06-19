@@ -1,10 +1,12 @@
 package com.maary.liveinpeace.database
 
+import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.sql.Date
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 @Entity(tableName = "connection_table")
 data class Connection(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -14,5 +16,4 @@ data class Connection(
     @ColumnInfo(name = "disconnected_time") val disconnectedTime: Long?,
     @ColumnInfo(name = "duration") val duration: Long?,
     @ColumnInfo(name = "date") val date: String,
-//    @ColumnInfo(name = "volume_changes") val volumeChanges: String
-    )
+    ) : Parcelable
