@@ -34,25 +34,25 @@ jobs:
         run: ./gradlew :app:assembleRelease
 
       # --- 修改开始：更新上传 Artifact 的逻辑 ---
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload APK (iconEnabled, arm64-v8a)
         with:
           name: LiveInPeace-iconEnabled-arm64-v8a
           path: app/build/outputs/apk/iconEnabled/release/LiveInPeace-iconEnabled-arm64-v8a-*.apk
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload APK (iconEnabled, universal)
         with:
           name: LiveInPeace-iconEnabled-universal
           path: app/build/outputs/apk/iconEnabled/release/LiveInPeace-iconEnabled-universal-*.apk
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload APK (iconDisabled, arm64-v8a)
         with:
           name: LiveInPeace-iconDisabled-arm64-v8a
           path: app/build/outputs/apk/iconDisabled/release/LiveInPeace-iconDisabled-arm64-v8a-*.apk
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload APK (iconDisabled, universal)
         with:
           name: LiveInPeace-iconDisabled-universal
@@ -122,12 +122,12 @@ jobs:
       - telegram-bot-api
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v3 # 建议使用 v3
+        uses: actions/download-artifact@v4 # 建议使用 v3
         with:
           path: artifacts
 
       - name: Download Telegram Bot API Binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: telegram-bot-api-binary
           path: .
@@ -170,7 +170,7 @@ jobs:
           git status telegram-bot-api >> telegram-bot-api-status
       - name: Cache Bot API Binary
         id: cache-bot-api
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: telegram-bot-api-binary
           key: CI-telegram-bot-api-${{ hashFiles('telegram-bot-api-status') }}
