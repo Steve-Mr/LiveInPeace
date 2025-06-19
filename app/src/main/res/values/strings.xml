@@ -23,14 +23,14 @@
     <string name="icon_of_device">Device icon</string>
     <string name="duration_minutes">%02d min</string>
     <string name="duration_hour">%1$d h %2$d min</string>
-    <string name="enable_watching">Enable alert</string>
+    <string name="enable_watching">Take a Break Reminder</string>
     <string name="disable_watching">Disable alert</string>
     <string name="current_connections">Current Connections</string>
     <string name="connections_history">Connections History</string>
     <string name="has_already_connected_for">Already connected</string>
     <string name="device_connection_state">Device connection state indicator</string>
     <string name="select_date">Select a Date</string>
-    <string name="protection">Protect My Ears</string>
+    <string name="protection">Safe Volume Start</string>
     <string name="dont_protect">Stop protecting ears</string>
     <string name="ears_protected">Ears Protected</string>
     <string name="channel_protection">Protecting ears</string>
@@ -51,4 +51,24 @@
         <item>Is that ASMR pleasing?</item>
         <item>Let\'s ROCK</item>
     </string-array>
+    <string name="title_activity_main" translatable="false">MainActivity</string>
+    <string name="icon_type" translatable="false">Notification Icon Type</string>
+    <string name="icon_type_description" translatable="false">Choose notification icon type from percent and image.</string>
+    <string name="notification_settings">Notification Settings</string>
+    <string name="notification_settings_description">Configure notification importance</string>
+    <string name="exit">Exit</string>
+    <string name="hide_in_launcher" translatable="false">Hide In Launcher</string>
+    <string name="finish">Finish</string>
+    <string name="nessery_permissions">Nessery</string>
+    <string name="optional_permissions">Optional</string>
+    <string name="notification_permission">Notification Permission</string>
+    <string name="notification_permission_description">This app needs notification permission to show the current media volume in the notification bar.</string>
+    <string name="disable_battery_optimization">Disable Battery Optimization</string>
+    <string name="disable_battery_optimization_description">Turning off battery optimization for this app helps prevent the system from stopping it unexpectedly, reducing potential errors.</string>
+    <string name="show_icon">Show App Icon in Launcher</string>
+    <string name="show_icon_description">Due to system limitations, the icon may not be completely hidden on some devices.</string>
+    <string name="title_activity_welcome" translatable="false">WelcomeActivity</string>
+    <string name="safe_volume_threshold">Safe Volume Threshold</string>
+    <string name="enable_watching_detail">Get notifications for prolonged headphone use.</string>
+    <string name="protection_detail">Automatically adjusts headphone volume to a safe and comfortable level upon connection.</string>
 </resources>
