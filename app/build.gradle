@@ -30,10 +30,27 @@ android {
         viewBinding true
         dataBinding false
         compose true
+        buildConfig true
     }
 
     androidResources {
         generateLocaleConfig true
+    }
+
+    flavorDimensions "icon"
+
+    productFlavors {
+        iconEnabled {
+            dimension "icon"
+            manifestPlaceholders = [mainActivityEnabled: "true"]
+            buildConfigField "boolean", "ICON_ENABLED", "true"
+        }
+
+        iconDisabled {
+            dimension "icon"
+            manifestPlaceholders = [mainActivityEnabled: "false"]
+            buildConfigField "boolean", "ICON_ENABLED", "false"
+        }
     }
 
     splits {
@@ -45,8 +62,9 @@ android {
             // Specifies the ABIs that Gradle should create APKs for.
             // This example creates APKs for the armeabi-v7a, arm64-v8a, x86, and x86_64 ABIs.
             // Other ABIs that you could include are: mips, mips64, and ppc64.
-            universalApk false
-            include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            universalApk true
+            //noinspection ChromeOsAbiSupport
+            include "arm64-v8a"
         }
     }
 
@@ -78,17 +96,31 @@ android {
     kotlinOptions {
         jvmTarget = '11'
     }
-    applicationVariants.configureEach { variant ->
-        variant.outputs.configureEach { output ->
-            // 查找 ABI 过滤器
-            def abiFilter = output.filters.find { it.filterType == "ABI" }
-            def abi = abiFilter?.identifier
 
-            def apkName = "LiveInPeace-${abi}.apk"
-            if (abi == "x86_64") {
-                apkName = "LiveInPeace-x64.apk"
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            variant.outputs.each { output ->
+                def abiFilter = output.filters.find { it.filterType == "ABI" }
+                def abi = abiFilter?.identifier
+
+                def flavorName = variant.flavorName
+                def versionName = output.versionName.getOrNull() ?: "unknown"
+                def apkName = "" // 先声明一个空变量
+
+                if (abi != null) {
+                    // ABI 包的处理逻辑 (if 分支)
+                    // 这部分只对 arm64-v8a 包生效
+                    apkName = "LiveInPeace-${flavorName}-${abi}-${versionName}.apk"
+                    if (abi == "x86_64") { // 虽然当前已移除，但保留逻辑无害
+                        apkName = "LiveInPeace-${flavorName}-x64-${versionName}.apk"
+                    }
+                } else {
+                    // 通用包 (Universal) 的处理逻辑 (else 分支)
+                    // 当 abi 为 null 时，说明这是 universalApk
+                    apkName = "LiveInPeace-${flavorName}-universal-${versionName}.apk"
+                }
+                output.outputFileName.set(apkName)
             }
-            output.outputFileName = apkName
         }
     }
 
@@ -124,7 +156,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1'
 
     implementation "com.google.dagger:hilt-android:2.56.2"
-    ksp "com.google.dagger:hilt-compiler:2.56.1"
+    ksp "com.google.dagger:hilt-compiler:2.56.2"
 
 
     implementation "androidx.room:room-runtime:2.7.1"

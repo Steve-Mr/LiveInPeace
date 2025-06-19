@@ -31,7 +31,7 @@
 
         <activity-alias
             android:name=".MainActivityAlias"
-            android:enabled="false"
+            android:enabled="${mainActivityEnabled}"
             android:exported="true"
             android:label="@string/app_name"
             android:targetActivity=".activity.MainActivity"
