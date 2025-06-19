@@ -8,6 +8,8 @@ plugins {
     id 'com.google.dagger.hilt.android'
 }
 
+import com.android.build.api.variant.FilterConfiguration
+
 def keystorePropertiesFile = rootProject.file("key.properties")
 def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
@@ -59,10 +61,8 @@ android {
             // Enables building multiple APKs per ABI.
             enable true
 
-            // Specifies the ABIs that Gradle should create APKs for.
-            // This example creates APKs for the armeabi-v7a, arm64-v8a, x86, and x86_64 ABIs.
-            // Other ABIs that you could include are: mips, mips64, and ppc64.
             universalApk true
+            reset()
             //noinspection ChromeOsAbiSupport
             include "arm64-v8a"
         }
@@ -98,10 +98,10 @@ android {
     }
 
     androidComponents {
-        onVariants(selector().all()) { variant ->
+        onVariants(selector().withBuildType("release")) { variant ->
             variant.outputs.each { output ->
-                def abiFilter = output.filters.find { it.filterType == "ABI" }
-                def abi = abiFilter?.identifier
+                def abiFilterData = output.filters.find { it.filterType == FilterConfiguration.FilterType.ABI }
+                def abi = abiFilterData?.identifier
 
                 def flavorName = variant.flavorName
                 def versionName = output.versionName.getOrNull() ?: "unknown"
