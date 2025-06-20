@@ -41,22 +41,22 @@ jobs:
       - uses: actions/upload-artifact@v4
         name: Upload apk (icon-enabled-arm64-v8a)
         with:
-          name: LiveInPeace-icon-enabled-arm64-v8a
+          name: LiveInPeace-icon-enabled-arm64-v8a.apk
           path: ${{ env.APK_FILE_ARMV8_ICON_ENABLED }}
       - uses: actions/upload-artifact@v4
         name: Upload apk (icon-enabled-universal)
         with:
-          name: LiveInPeace-icon-enabled-universal
+          name: LiveInPeace-icon-enabled-universal.apk
           path: ${{ env.APK_FILE_UNI_ICON_ENABLED }}
       - uses: actions/upload-artifact@v4
         name: Upload apk (icon-disabled-arm64-v8a)
         with:
-          name: LiveInPeace-icon-disabled-arm64-v8a
+          name: LiveInPeace-icon-disabled-arm64-v8a.apk
           path: ${{ env.APK_FILE_ARMV8_ICON_DISABLED }}
       - uses: actions/upload-artifact@v4
         name: Upload apk (icon-disabled-universal)
         with:
-          name: LiveInPeace-icon-disabled-universal
+          name: LiveInPeace-icon-disabled-universal.apk
           path: ${{ env.APK_FILE_UNI_ICON_DISABLED }}
 
 
@@ -140,6 +140,12 @@ jobs:
           echo "APK_FILE_UPLOAD1=$(find apks -name '*enabled-arm64*.apk')" >> $GITHUB_ENV
           echo "APK_FILE_UPLOAD2=$(find apks -name '*disabled-arm64*.apk')" >> $GITHUB_ENV
           ls ./apks
+          
+      - name: Get Apk Info
+        id: apk
+        uses: JantHsueh/get-apk-info-action@master
+        with:
+          apkPath: ${{ env.APK_FILE_UPLOAD1 }}
 
       - name: Release
         run: |
