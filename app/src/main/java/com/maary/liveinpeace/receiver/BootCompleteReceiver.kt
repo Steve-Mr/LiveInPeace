@@ -7,7 +7,6 @@ import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.maary.liveinpeace.BootWorker
-import com.maary.liveinpeace.service.ForegroundService
 
 class BootCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {

@@ -37,6 +37,9 @@ import java.util.Locale
 // Remove DeviceMapChangeListener from the class declaration
 class HistoryActivity : AppCompatActivity() {
 
+    //todo add swipt to change date
+    //todo show current connections in a different color
+    //todo show connections start time and end time in the list
     private lateinit var binding: ActivityHistoryBinding
     private val connectionViewModel: ConnectionViewModel by viewModels {
         ConnectionViewModelFactory((application as LiveInPeaceApplication).repository)

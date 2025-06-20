@@ -21,12 +21,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants
-import com.maary.liveinpeace.Constants.Companion.EAR_PROTECTION_LOWER_THRESHOLD
-import com.maary.liveinpeace.Constants.Companion.EAR_PROTECTION_UPPER_THRESHOLD
 import com.maary.liveinpeace.DeviceTimer
-import com.maary.liveinpeace.activity.MainActivity
 import com.maary.liveinpeace.R
 import com.maary.liveinpeace.SleepNotification.find
+import com.maary.liveinpeace.activity.MainActivity
 import com.maary.liveinpeace.database.Connection
 import com.maary.liveinpeace.database.ConnectionDao
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
@@ -36,13 +34,20 @@ import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.text.DateFormat
 import java.time.LocalDate
-import java.util.*
+import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -226,7 +231,6 @@ class ForegroundService : Service() {
      */
     private val audioDeviceCallback = object : AudioDeviceCallback() {
         private val CALLBACK_TAG = "AudioDeviceCallback"
-        private val VOLUME_ADJUST_ATTEMPTS = 100
 
         private val IGNORED_DEVICE_TYPES = setOf(
             AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,

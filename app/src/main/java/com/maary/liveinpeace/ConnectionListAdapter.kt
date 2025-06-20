@@ -4,19 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.ColorStateList
 import android.media.AudioDeviceInfo
-import android.media.Image
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.maary.liveinpeace.database.Connection
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.coroutineContext
 
 class ConnectionListAdapter : ListAdapter<Connection, ConnectionListAdapter.ConnectionViewHolder>(ConnectionsComparator()){
 

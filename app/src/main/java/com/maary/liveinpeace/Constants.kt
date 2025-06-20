@@ -2,15 +2,8 @@ package com.maary.liveinpeace
 
 class Constants {
     companion object {
-        // 使用字符式图标
-        const val MODE_NUM = 0
-        // 使用图像式图标
-        const val MODE_IMG = 1
         // SharedPref 名称
         const val SHARED_PREF = "com.maary.liveinpeace.pref"
-        // 图标类型的 SharedPref 项目名称
-        const val PREF_ICON =  "icon_type"
-        const val PREF_NOTIFY_TEXT_SIZE = "notification_text_size"
         const val PREF_WATCHING_CONNECTING_TIME = "watching_connecting"
         const val PREF_ENABLE_EAR_PROTECTION = "ear_protection_enabled"
         const val PREF_WELCOME_FINISHED = "welcome_finished"
@@ -19,16 +12,12 @@ class Constants {
         const val PREF_HIDE_IN_LAUNCHER = "hide_in_launcher"
         const val PREF_EAR_PROTECTION_THRESHOLD_MAX = "ear_protection_max"
         const val PREF_EAR_PROTECTION_THRESHOLD_MIN = "ear_protection_min"
-        const val PREF_EAR_PROTECTION_THRESHOLD = "ear_protection_threshold"
         const val EAR_PROTECTION_LOWER_THRESHOLD = 10
         const val EAR_PROTECTION_UPPER_THRESHOLD = 25
-        // 设置通知 id
-        const val ID_NOTIFICATION_SETTINGS = 3
         // 前台通知 id
         const val ID_NOTIFICATION_FOREGROUND = 1
         const val ID_NOTIFICATION_ALERT = 2
         const val ID_NOTIFICATION_PROTECT = 4
-        const val ID_NOTIFICATION_WELCOME = 0
         const val ID_NOTIFICATION_SLEEPTIMER = 5
         // 静音广播名称
         const val BROADCAST_ACTION_MUTE = "com.maary.liveinpeace.MUTE_MEDIA"
@@ -45,8 +34,6 @@ class Constants {
         const val BROADCAST_ACTION_CONNECTIONS_UPDATE = "com.maary.liveinpeace.CONNECTIONS_UPDATE"
         const val EXTRA_CONNECTIONS_LIST = "com.maary.liveinpeace.extra.CONNECTIONS_LIST"
 
-        // 当音量操作动作太过频繁后等待时间
-        const val REQUESTING_WAIT_MILLIS = 500
         // 不同通知频道 ID
         const val CHANNEL_ID_DEFAULT = "LIP_FOREGROUND"
         const val CHANNEL_ID_SETTINGS = "LIP_SETTINGS"
@@ -60,7 +47,6 @@ class Constants {
         const val DEBOUNCE_TIME_MS = 500
         // 不同通知的 GROUP ID
         const val ID_NOTIFICATION_GROUP_FORE = "LIP_notification_group_foreground"
-        const val ID_NOTIFICATION_GROUP_SETTINGS = "LIP_notification_group_settings"
         const val ID_NOTIFICATION_GROUP_ALERTS = "LIP_notification_group_alerts"
         const val ID_NOTIFICATION_GROUP_PROTECT = "LIP_notification_group_protect"
         const val ID_NOTIFICATION_GROUP_SLEEPTIMER = "LIP_notification_group_sleeptimer"

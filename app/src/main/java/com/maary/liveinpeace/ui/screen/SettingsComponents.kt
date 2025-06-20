@@ -1,11 +1,7 @@
 package com.maary.liveinpeace.ui.screen
 
-import android.transition.Slide
-import android.util.Range
-import androidx.annotation.FloatRange
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,18 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -41,16 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.util.toRange
 import com.maary.liveinpeace.ui.theme.Typography
-import com.maary.liveinpeace.R
 
 @Composable
 fun TextContent(modifier: Modifier = Modifier, title: String, description: String? = null, color: Color = MaterialTheme.colorScheme.secondary) {
@@ -67,53 +49,6 @@ fun TextContent(modifier: Modifier = Modifier, title: String, description: Strin
                 maxLines = 5,
                 color = color
             )
-        }
-    }
-}
-
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DropdownItem(modifier: Modifier, options: MutableList<String>, position: Int, onItemClicked: (Int) -> Unit) {
-    var expanded by remember {
-        mutableStateOf(false)
-    }
-
-    Box(modifier = modifier) {
-        ExposedDropdownMenuBox(
-            modifier =
-                Modifier.padding(8.dp),
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-        ) {
-            OutlinedTextField(
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                value = options[position],//text,
-                onValueChange = {},
-                readOnly = true,
-                singleLine = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            )
-            ExposedDropdownMenu(
-                modifier = Modifier.wrapContentWidth(),
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        modifier = Modifier.wrapContentWidth(),
-                        text = { Text(option, style = Typography.bodyLarge) },
-                        onClick = {
-                            expanded = false
-                            onItemClicked(options.indexOf(option))
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                    )
-                }
-            }
         }
     }
 }
@@ -137,26 +72,6 @@ fun SwitchRow(
         TextContent(modifier = Modifier.weight(1f), title = title, description = description, color = switchColor)
         Spacer(modifier = Modifier.width(8.dp))
         Switch(checked = state, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedTrackColor = switchColor))
-    }
-}
-
-@Composable
-fun DropdownRow(options: MutableList<String>, position: Int, onItemClicked: (Int) -> Unit) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TextContent(
-            modifier = Modifier.weight(3f),
-            title = stringResource(id = R.string.icon_type),
-            description = stringResource(id = R.string.icon_type_description)
-        )
-        DropdownItem(modifier = Modifier.weight(2f), options = options,
-            position = position, onItemClicked = onItemClicked)
     }
 }
 
