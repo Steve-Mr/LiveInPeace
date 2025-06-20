@@ -2,8 +2,6 @@ package com.maary.liveinpeace
 
 class Constants {
     companion object {
-        // Cancel 的 Action
-        const val ACTION_CANCEL = "com.maary.liveinpeace.receiver.SettingsReceiver.Cancel"
         // 使用字符式图标
         const val MODE_NUM = 0
         // 使用图像式图标
@@ -32,18 +30,6 @@ class Constants {
         const val ID_NOTIFICATION_PROTECT = 4
         const val ID_NOTIFICATION_WELCOME = 0
         const val ID_NOTIFICATION_SLEEPTIMER = 5
-        // 设置图像式图标 Action
-        const val ACTION_NAME_SET_IMG = "com.maary.liveinpeace.receiver.SettingsReceiver.SetIconImg"
-        // 设置字符式图标 Action
-        const val ACTION_NAME_SET_NUM = "com.maary.liveinpeace.receiver.SettingsReceiver.SetIconNum"
-        // 启用长时间连接提醒 Action
-        const val ACTION_ENABLE_WATCHING = "com.maary.liveinpeace.receiver.SettingsReceiver.EnableWatching"
-        // 禁用长时间连接提醒 Action
-        const val ACTION_DISABLE_WATCHING = "com.maary.liveinpeace.receiver.SettingsReceiver.DisableWatching"
-        // toggle 设备连接调整音量 Action
-        const val ACTION_TOGGLE_AUTO_CONNECTION_ADJUSTMENT = "com.maary.liveinpeace.receiver.SettingsReceiver.ToggleAdjustment"
-        // 设置 Action
-        const val ACTION_NAME_SETTINGS = "com.maary.liveinpeace.receiver.SettingsReceiver"
         // 静音广播名称
         const val BROADCAST_ACTION_MUTE = "com.maary.liveinpeace.MUTE_MEDIA"
         const val BROADCAST_ACTION_SLEEPTIMER_CANCEL = "com.maary.liveinpeace.action.CANCEL"
