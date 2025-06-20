@@ -21,131 +21,86 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.content.edit
 import com.maary.liveinpeace.Constants
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_FOREGROUND
-import com.maary.liveinpeace.Constants.Companion.BROADCAST_FOREGROUND_INTENT_EXTRA
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
-import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_WELCOME
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_GROUP_SETTINGS
-import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_SETTINGS
 import com.maary.liveinpeace.Constants.Companion.ID_NOTIFICATION_WELCOME
-import com.maary.liveinpeace.Constants.Companion.PREF_WELCOME_FINISHED
 import com.maary.liveinpeace.Constants.Companion.REQUESTING_WAIT_MILLIS
-import com.maary.liveinpeace.Constants.Companion.SHARED_PREF
 import com.maary.liveinpeace.R
+import com.maary.liveinpeace.activity.WelcomeActivity
+import com.maary.liveinpeace.database.PreferenceRepository
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface PreferenceQSTileEntryPoint {
+    fun preferenceRepository(): PreferenceRepository
+}
 
 class QSTileService: TileService() {
 
+    private val serviceScope = CoroutineScope( SupervisorJob() + Dispatchers.IO)
+    private lateinit var preferenceRepository: PreferenceRepository
+
+    override fun onCreate() {
+        super.onCreate()
+        val entryPoint = EntryPointAccessors.fromApplication(
+            applicationContext,
+            PreferenceQSTileEntryPoint::class.java
+        )
+        preferenceRepository = entryPoint.preferenceRepository()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+    }
+
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onClick() {
         super.onClick()
         val tile = qsTile
-        var waitMillis = REQUESTING_WAIT_MILLIS
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_DEFAULT) == null){
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_DEFAULT,
-                resources.getString(R.string.default_channel),
-                resources.getString(R.string.default_channel_description)
-            )
+        var intent = Intent(this, WelcomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_SETTINGS) == null) {
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_SETTINGS,
-                resources.getString(R.string.channel_settings),
-                resources.getString(R.string.settings_channel_description)
-            )
-        }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_ALERT) == null) {
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_HIGH,
-                CHANNEL_ID_ALERT,
-                resources.getString(R.string.channel_alert),
-                resources.getString(R.string.alert_channel_description)
-            )
-        }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_PROTECT) == null) {
-            val channel = NotificationChannel(
-                CHANNEL_ID_PROTECT,
-                resources.getString(R.string.channel_protection),
-                NotificationManager.IMPORTANCE_LOW).apply {
-                description = resources.getString(R.string.protection_channel_description)
-                enableVibration(false)
-                setSound(null, null)
-            }
-            // Register the channel with the system
-            notificationManager.createNotificationChannel(channel)
-        }
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_WELCOME) == null){
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_WELCOME,
-                resources.getString(R.string.welcome_channel),
-                resources.getString(R.string.welcome_channel_description)
-            )
-        }
-
-        if (notificationManager.getNotificationChannel(CHANNEL_ID_SLEEPTIMER) == null){
-            createNotificationChannel(
-                NotificationManager.IMPORTANCE_MIN,
-                CHANNEL_ID_SLEEPTIMER,
-                resources.getString(R.string.sleeptimer_channel),
-                resources.getString(R.string.sleeptimer_channel_description)
-            )
-        }
-
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-
-        while(ActivityCompat.checkSelfPermission(
-                applicationContext,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.v("MUTE_", waitMillis.toString())
-            requestNotificationsPermission()
-            Thread.sleep(waitMillis.toLong())
-            waitMillis *= 2
-        }
-
-        val sharedPref = getSharedPreferences(SHARED_PREF, Context.MODE_PRIVATE)
-        while (!sharedPref.getBoolean(PREF_WELCOME_FINISHED, false)){
-            if ( powerManager.isIgnoringBatteryOptimizations(packageName) &&
-                ActivityCompat.checkSelfPermission(
-                    applicationContext, Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED) {
-                sharedPref.edit {
-                    putBoolean(PREF_WELCOME_FINISHED, true)
+        serviceScope.launch {
+            if (!preferenceRepository.isWelcomeFinished().first()) {
+                val pendingIntent = PendingIntent.getActivity(
+                    this@QSTileService,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startActivityAndCollapse(pendingIntent)
+                } else {
+                    startActivityAndCollapse(intent)
                 }
-                break
-            } else {
-                createWelcomeNotification()
-                Thread.sleep(waitMillis.toLong())
-                waitMillis *= 2
+                return@launch
             }
-        }
-
-
-        val intent = Intent(this, ForegroundService::class.java)
-
-        if (!ForegroundService.isForegroundServiceRunning()){
-            applicationContext.startForegroundService(intent)
-            tile.state = Tile.STATE_ACTIVE
-            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_one)
-            tile.label = getString(R.string.qstile_active)
-
-        }else{
-            applicationContext.stopService(intent)
-            tile.state = Tile.STATE_INACTIVE
-            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_off)
-            tile.label = getString(R.string.qstile_inactive)
+            intent = Intent(this@QSTileService, ForegroundService::class.java)
+            if (preferenceRepository.isServiceRunning().first()) {
+                stopService(intent)
+                preferenceRepository.setServiceRunning(false)
+                updateTileState(false)
+                tile.updateTile()
+            } else {
+                startForegroundService(intent)
+                preferenceRepository.setServiceRunning(true)
+                updateTileState(true)
+                tile.updateTile()
+            }
         }
         tile.updateTile()
     }
@@ -153,8 +108,32 @@ class QSTileService: TileService() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onStartListening() {
         super.onStartListening()
+
+        // --- 核心校准逻辑开始 ---
+        // 每次磁贴可见时，检查持久化状态和内存状态是否一致
+        serviceScope.launch {
+            // 从 PreferenceRepository 读取“预期状态”
+            val expectedState = preferenceRepository.isServiceRunning().first()
+            // 直接从内存中读取服务的“实际状态”
+            val actualState = ForegroundService.isRunning
+            // 对比两个状态
+            if (expectedState && !actualState) {
+                // **发现不一致！**
+                // 记录显示服务在运行，但内存中它已停止。
+                // 这几乎可以肯定是服务被系统强杀了。
+                // 1. 修正错误的持久化记录
+                preferenceRepository.setServiceRunning(false)
+                // 2. 用修正后的、正确的状态（false）来更新磁贴外观
+                updateTileState(false)
+            } else {
+                // 状态一致，一切正常。直接按预期状态更新磁贴即可。
+                updateTileState(expectedState)
+            }
+        }
+        // --- 核心校准逻辑结束 ---
+
         val intentFilter = IntentFilter()
-        intentFilter.addAction(BROADCAST_ACTION_FOREGROUND)
+        intentFilter.addAction(Constants.BROADCAST_ACTION_FOREGROUND)
         registerReceiver(foregroundServiceReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
     }
 
@@ -165,82 +144,26 @@ class QSTileService: TileService() {
 
     private val foregroundServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Log.v("MUTE_QS", "TRIGGERED")
-
-            val isForegroundServiceRunning = intent.getBooleanExtra(
-                BROADCAST_FOREGROUND_INTENT_EXTRA, false)
-            // 在此处处理前台服务状态的变化
-            val tile = qsTile
-
-            if (!isForegroundServiceRunning){
-                Log.v("MUTE_QS", "NOT RUNNING")
-                tile.state = Tile.STATE_INACTIVE
-                tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_off)
-                tile.label = getString(R.string.qstile_inactive)
-                val foregroundIntent = Intent(context, ForegroundService::class.java)
-                applicationContext.startForegroundService(foregroundIntent)
-            }else{
-                tile.state = Tile.STATE_ACTIVE
-                tile.icon = Icon.createWithResource(context, R.drawable.icon_qs_one)
-                tile.label = getString(R.string.qstile_active)
+            if (intent.action == Constants.BROADCAST_ACTION_FOREGROUND) {
+                val isRunning = intent.getBooleanExtra(Constants.BROADCAST_FOREGROUND_INTENT_EXTRA, false)
+                Log.d("QSTileService", "Received foreground service state update: isRunning=$isRunning")
+                updateTileState(isRunning)
             }
-            tile.updateTile()
         }
     }
 
-    private fun createNotificationChannel(importance:Int, id: String ,name:String, descriptionText: String) {
-        //val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel(id, name, importance).apply {
-            description = descriptionText
+    private fun updateTileState(isRunning: Boolean) {
+        val tile = qsTile ?: return // Tile might be null if called before ready
+
+        if (isRunning) {
+            tile.state = Tile.STATE_ACTIVE
+            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_one) // Active icon
+            tile.label = getString(R.string.qstile_active)
+        } else {
+            tile.state = Tile.STATE_INACTIVE
+            tile.icon = Icon.createWithResource(this, R.drawable.icon_qs_off) // Inactive icon
+            tile.label = getString(R.string.qstile_inactive)
         }
-        // Register the channel with the system
-        val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
-    }
-
-    private fun requestNotificationsPermission() {
-        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-        }
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startActivityAndCollapse(pendingIntent)
-        }
-    }
-
-    @SuppressLint("BatteryLife")
-    private fun createWelcomeNotification() {
-        Log.v("MUTE_", "CREATING WELCOME")
-        val welcome = NotificationCompat.Builder(this, CHANNEL_ID_WELCOME)
-            .setOngoing(true)
-            .setSmallIcon(R.drawable.ic_baseline_settings_24)
-            .setShowWhen(false)
-            .setContentTitle(getString(R.string.welcome))
-            .setContentText(getString(R.string.welcome_description))
-            .setOnlyAlertOnce(true)
-            .setGroupSummary(false)
-            .setGroup(ID_NOTIFICATION_GROUP_SETTINGS)
-
-        val batteryIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-        batteryIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            .data = Uri.parse("package:$packageName")
-
-        val pendingBatteryIntent = PendingIntent.getActivity(this, 0, batteryIntent, PendingIntent.FLAG_IMMUTABLE)
-
-        val batteryAction = NotificationCompat.Action.Builder(
-            R.drawable.outline_battery_saver_24,
-            getString(R.string.request_permission_battery),
-            pendingBatteryIntent
-        ).build()
-
-        welcome.addAction(batteryAction)
-
-        val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        notificationManager.notify(ID_NOTIFICATION_WELCOME, welcome.build())
-
+        tile.updateTile()
     }
 }
