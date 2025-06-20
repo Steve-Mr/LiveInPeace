@@ -31,14 +31,14 @@
     <string name="icon_of_device">设备图标</string>
     <string name="duration_minutes">%02d 分钟</string>
     <string name="duration_hour">%1$d 小时 %2$d 分钟</string>
-    <string name="enable_watching">启用提醒</string>
+    <string name="enable_watching">休息提醒</string>
     <string name="disable_watching">禁用提醒</string>
     <string name="current_connections">当前连接</string>
     <string name="connections_history">历史连接</string>
     <string name="has_already_connected_for">已连接</string>
     <string name="device_connection_state">设备连接状态指示</string>
     <string name="select_date">选择日期</string>
-    <string name="protection">保护耳朵</string>
+    <string name="protection">安全音量启动</string>
     <string name="dont_protect">不保护耳朵</string>
     <string name="ears_protected">保护了耳朵</string>
     <string name="channel_protection">保护耳朵</string>
@@ -52,4 +52,19 @@
     <string name="sleeptimer_channel">睡眠定时器</string>
     <string name="sleeptimer_channel_description">用于睡眠定时器的通知</string>
     <string name="sleep">睡觉！</string>
+    <string name="notification_settings">通知设置</string>
+    <string name="notification_settings_description">设置通知优先级</string>
+    <string name="exit">退出</string>
+    <string name="finish">完成</string>
+    <string name="nessery_permissions">必要权限</string>
+    <string name="optional_permissions">可选</string>
+    <string name="notification_permission">发送通知权限</string>
+    <string name="notification_permission_description">本应用需要通知权限以在通知栏显示当前媒体音量。</string>
+    <string name="disable_battery_optimization">禁用电池优化</string>
+    <string name="disable_battery_optimization_description">禁用电池优化有助于降低应用被系统后台策略限制的可能。</string>
+    <string name="show_icon">显示应用图标</string>
+    <string name="show_icon_description">由于系统限制，某些设备上图标可能无法完全隐藏。</string>
+    <string name="safe_volume_threshold">安全音量阈值</string>
+    <string name="enable_watching_detail">长时间使用耳机时会受到通知提醒。</string>
+    <string name="protection_detail">连接耳机时，自动将音量调整到合适的范围。</string>
 </resources>
