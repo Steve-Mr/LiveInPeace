@@ -67,7 +67,6 @@ if __name__ == '__main__':
     message = (
         f"#app #apk\n"
         f"**版本:** `{version_name}`\n\n"
-        f"**更新内容:**\n{commit_message}\n\n"
         f"https://github.com/Steve-Mr/LiveInPeace"
     )
 
