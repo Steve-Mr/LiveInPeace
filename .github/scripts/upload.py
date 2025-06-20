@@ -6,16 +6,11 @@ apiAddress = "http://127.0.0.1:8081/"
 urlPrefix = apiAddress + "bot" + os.getenv("TELEGRAM_TOKEN")
 
 
-def sendMediaGroup(user_id, paths, message=""):
-    """
-    使用 Telegram Bot API 的 sendMediaGroup 方法发送一组文件。
-    """
+def sendMediaGroup(user_id, paths):
     url = urlPrefix + "/sendMediaGroup"
     files = {}
     media = []
 
-    # 将消息文本（caption）附加到第一个文件上
-    # API规定，媒体组的标题由第一个媒体项的 caption 决定
     for i, path in enumerate(paths):
         file_key = f'file{i}'
         files[file_key] = open(path, 'rb')
@@ -23,25 +18,30 @@ def sendMediaGroup(user_id, paths, message=""):
             'type': 'document',
             'media': f'attach://{file_key}'
         }
-        # 只在第一个文件上添加 caption
-        if i == 0:
-            media_item['caption'] = message
-            media_item['parse_mode'] = 'Markdown'
         media.append(media_item)
 
-    # 准备请求数据
     data = {
         'chat_id': user_id,
         'media': json.dumps(media)
     }
 
-    # 发送请求
     response = requests.post(url, files=files, data=data)
-    print(response.json())
+    print("MediaGroup Response:", response.json())
 
-    # 关闭所有已打开的文件
     for f in files.values():
         f.close()
+
+
+def sendTextMessage(user_id, message):
+    url = urlPrefix + "/sendMessage"
+    data = {
+        'chat_id': user_id,
+        'text': message,
+        'parse_mode': 'Markdown'
+    }
+    response = requests.post(url, data=data)
+    print("Text Message Response:", response.json())
+
 
 
 if __name__ == '__main__':
@@ -68,9 +68,5 @@ if __name__ == '__main__':
         f"https://github.com/Steve-Mr/LiveInPeace"
     )
 
-    # 调用函数，将两个 APK 文件发送到指定用户
-    sendMediaGroup(
-        user_id="@maaryIsTyping",
-        paths=apk_paths,
-        message=message
-    )
+    sendMediaGroup(user_id="@maaryIsTyping", paths=apk_paths)
+    sendTextMessage(user_id="@maaryIsTyping", message=message)
