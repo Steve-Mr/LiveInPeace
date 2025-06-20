@@ -1,4 +1,4 @@
-package com.maary.liveinpeace
+package com.maary.liveinpeace.viewmodel
 
 import androidx.lifecycle.*
 import com.maary.liveinpeace.database.Connection
