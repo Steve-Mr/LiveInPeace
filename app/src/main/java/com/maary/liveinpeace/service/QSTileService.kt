@@ -109,7 +109,8 @@ class QSTileService: TileService() {
                 // 记录显示服务在运行，但内存中它已停止。
                 // 这几乎可以肯定是服务被系统强杀了。
                 // 1. 修正错误的持久化记录
-                preferenceRepository.setServiceRunning(false)
+                val intent = Intent(this@QSTileService, ForegroundService::class.java)
+                startForegroundService(intent)
                 // 2. 用修正后的、正确的状态（false）来更新磁贴外观
                 updateTileState(false)
             } else {
