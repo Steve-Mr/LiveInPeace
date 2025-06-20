@@ -137,9 +137,15 @@ jobs:
         run: |
           mkdir apks
           find artifacts -name "*.apk" -exec cp {} apks \;
-          echo "APK_FILE_UPLOAD1=$(find apks -name '*enabled-arm64*.apk')" >> $GITHUB_ENV
-          echo "APK_FILE_UPLOAD2=$(find apks -name '*disabled-arm64*.apk')" >> $GITHUB_ENV
+          
+          # 添加一个调试步骤，列出所有复制过来的APK，方便排查
+          echo "--- Listing files in apks directory ---"
           ls ./apks
+          
+          # 修正这里的匹配模式，确保与 build job 一致
+          echo "APK_FILE_UPLOAD1=$(find apks -name '*iconEnabled-arm64*.apk')" >> $GITHUB_ENV
+          echo "APK_FILE_UPLOAD2=$(find apks -name '*iconDisabled-arm64*.apk')" >> $GITHUB_ENV
+
           
       - name: Get Apk Info
         id: apk
