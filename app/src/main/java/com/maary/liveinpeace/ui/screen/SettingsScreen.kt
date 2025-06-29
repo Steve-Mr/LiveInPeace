@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -73,37 +75,33 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.inversePrimary,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
-                    actionIconContentColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.tertiary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.tertiary,
+                    actionIconContentColor = MaterialTheme.colorScheme.tertiary
                 ),
                 title = {
-                    Text(stringResource(R.string.app_name),
-                        style = Typography.titleLarge.copy(
-                            fontWeight = FontWeight.Black,
-                            fontStyle = FontStyle.Italic
-                        )
-                    )
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.app_name),
+                        textAlign = TextAlign.Center)
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        //exit the settings screen
-                        // this could be a popBackStack or finish depending on your navigation setup
-                        // For example, if using Jetpack Navigation:
-                         (context as? Activity)?.finish()
-                        // If using a navigation component, you might want to use:
-                        // navController.popBackStack()
-                    }) {
+                    IconButton(
+                        onClick = { (context as? Activity)?.finish() },
+                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.tertiary,
+                            contentColor = MaterialTheme.colorScheme.onTertiary)) {
                         Icon(imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.exit))
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        val intent = Intent(context, HistoryActivity::class.java)
-                        context.startActivity(intent)
-                    } ) {
+                    IconButton(
+                        onClick = {
+                            val intent = Intent(context, HistoryActivity::class.java)
+                            context.startActivity(intent) },
+                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.tertiary,
+                            contentColor = MaterialTheme.colorScheme.onTertiary)) {
                         Icon(painter = painterResource(R.drawable.ic_action_history),
                             contentDescription = stringResource(R.string.connections_history))
                     }
@@ -116,7 +114,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .background(MaterialTheme.colorScheme.inversePrimary)
+                .background(MaterialTheme.colorScheme.tertiaryContainer)
         ){
 
             /**
@@ -135,17 +133,17 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
 
             SettingsItem(
                 position = if (isForegroundEnabled) GroupPosition.TOP else GroupPosition.SINGLE,
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
+                containerColor = MaterialTheme.colorScheme.primaryContainer) {
                 SwitchRow(
                     title = stringResource(id = R.string.default_channel),
                     state = isForegroundEnabled,
                     onCheckedChange = { settingsViewModel.foregroundSwitch() },
-                    switchColor = MaterialTheme.colorScheme.tertiary)
+                    switchColor = MaterialTheme.colorScheme.primary)
             }
 
             AnimatedVisibility(visible = isForegroundEnabled) {
                 SettingsItem( position = GroupPosition.BOTTOM,
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
+                    containerColor = MaterialTheme.colorScheme.primaryContainer) {
                     TextContent(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -158,7 +156,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                             .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
                         title = stringResource(id = R.string.notification_settings),
                         description = stringResource(R.string.notification_settings_description),
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
