@@ -17,12 +17,12 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
     namespace 'com.maary.liveinpeace'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.maary.liveinpeace"
         minSdk 31
-        targetSdk 35
+        targetSdk 36
         versionCode 5
         versionName "2025.06.29"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
