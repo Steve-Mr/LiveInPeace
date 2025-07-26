@@ -135,28 +135,28 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
 
     implementation 'androidx.activity:activity-ktx:1.10.1'
-    implementation 'androidx.databinding:databinding-runtime:8.10.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.9.1'
+    implementation 'androidx.databinding:databinding-runtime:8.11.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.9.2'
     implementation 'androidx.activity:activity-compose:1.10.1'
-    implementation platform('androidx.compose:compose-bom:2025.06.01')
+    implementation platform('androidx.compose:compose-bom:2025.07.00')
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
-    implementation 'androidx.compose.material3:material3:1.4.0-alpha16'
-    androidTestImplementation platform('androidx.compose:compose-bom:2025.06.01')
+    implementation 'androidx.compose.material3:material3:1.4.0-alpha18'
+    androidTestImplementation platform('androidx.compose:compose-bom:2025.07.00')
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
     // LiveData
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.9.1"
-    implementation "androidx.lifecycle:lifecycle-common-java8:2.9.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.9.1"
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1'
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.9.2"
+    implementation "androidx.lifecycle:lifecycle-common-java8:2.9.2"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.2"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.9.2"
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2'
 
-    implementation "com.google.dagger:hilt-android:2.56.2"
-    ksp "com.google.dagger:hilt-compiler:2.56.2"
+    implementation "com.google.dagger:hilt-android:2.57"
+    ksp "com.google.dagger:hilt-compiler:2.57"
 
 
     implementation "androidx.room:room-runtime:2.7.2"
