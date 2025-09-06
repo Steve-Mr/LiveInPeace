@@ -9,6 +9,7 @@ import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_ALERT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_DEFAULT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_PROTECT
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SETTINGS
+import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_SLEEPTIMER
 import com.maary.liveinpeace.Constants.Companion.CHANNEL_ID_WELCOME
 import com.maary.liveinpeace.database.ConnectionRepository
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
@@ -62,6 +63,13 @@ class LiveInPeaceApplication: Application() {
             resources.getString(R.string.welcome_channel),
             resources.getString(R.string.welcome_channel_description)
         )
+
+        createNotificationChannel(
+            NotificationManager.IMPORTANCE_MIN,
+            CHANNEL_ID_SLEEPTIMER,
+            resources.getString(R.string.sleeptimer_channel),
+            resources.getString(R.string.sleeptimer_channel_description)
+        )
     }
 
     private fun createNotificationChannel(importance:Int, id: String ,name:String, descriptionText: String) {
@@ -71,7 +79,7 @@ class LiveInPeaceApplication: Application() {
         }
         // Register the channel with the system
         val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
     }
 }
