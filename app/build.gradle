@@ -9,6 +9,7 @@ plugins {
 }
 
 import com.android.build.api.variant.FilterConfiguration
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 def keystorePropertiesFile = rootProject.file("key.properties")
 def keystoreProperties = new Properties()
@@ -24,7 +25,7 @@ android {
         minSdk 31
         targetSdk 36
         versionCode 5
-        versionName "2025.06.29"
+        versionName "2025.09.07"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -93,8 +94,13 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = '11'
+//    kotlinOptions {
+//        jvmTarget = '11'
+//    }
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_11
+        }
     }
 
     androidComponents {
