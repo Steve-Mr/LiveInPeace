@@ -10,8 +10,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
@@ -79,11 +81,22 @@ class ForegroundService : Service() {
 
         // 为未知的设备类型 `28` 定义一个有意义的常量名
         private const val TYPE_UNKNOWN_DEVICE_28 = 28
+
+        const val ACTION_MUTE_MEDIA = "com.maary.liveinpeace.service.ACTION_MUTE_MEDIA"
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val audioManager: AudioManager by lazy {
-        getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        getSystemService(AUDIO_SERVICE) as AudioManager
+    }
+
+    private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                // 如果长时间失去焦点，可以考虑做一些清理工作
+                Log.d(TAG, "Audio focus lost permanently.")
+            }
+        }
     }
 
     @Inject
@@ -150,6 +163,14 @@ class ForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand received.")
+
+        when (intent?.action) {
+            ACTION_MUTE_MEDIA -> {
+                Log.d(TAG, "Mute media action received.")
+                handleMuteMedia()
+            }
+        }
+
         // 确保服务被重新创建时，通知内容是最新的
         updateForegroundNotification()
         return START_STICKY
@@ -167,7 +188,7 @@ class ForegroundService : Service() {
 
         // 停止前台服务并移除通知
         stopForeground(STOP_FOREGROUND_REMOVE)
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(Constants.ID_NOTIFICATION_FOREGROUND)
 
         Log.d(TAG, "Service destroyed.")
@@ -335,7 +356,7 @@ class ForegroundService : Service() {
                             duration = duration
                         )
                         if (duration > Constants.ALERT_TIME) {
-                            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                             notificationManager.cancel(Constants.ID_NOTIFICATION_ALERT)
                         }
                     }
@@ -375,7 +396,7 @@ class ForegroundService : Service() {
                         Log.d(CALLBACK_TAG, "Ear protection applied for $deviceName.")
                         showProtectionNotification()
                     }
-                } catch (e: CancellationException) {
+                } catch (_: CancellationException) {
                     Log.d(CALLBACK_TAG, "Protection job for $deviceName was cancelled.")
                 } finally {
                     protectionJobs.remove(deviceName)
@@ -436,6 +457,42 @@ class ForegroundService : Service() {
     private fun onDeviceListChanged() {
         broadcastConnectionsUpdate()
         updateForegroundNotification()
+    }
+
+    private fun handleMuteMedia() {
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+
+        val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(attributes)
+            .setOnAudioFocusChangeListener(afChangeListener) // 使用我们定义的监听器
+            .build()
+
+        Log.d(TAG, "Attempting to request audio focus from service...")
+        val result = audioManager.requestAudioFocus(focusRequest)
+
+        // 1. 仍然尝试请求焦点，并记录结果用于调试，但不再将静音操作绑定到成功的分支上。
+        when (result) {
+            AudioManager.AUDIOFOCUS_REQUEST_GRANTED -> {
+                Log.d(TAG, "Audio focus request GRANTED from service.")
+            }
+            else -> {
+                // 包含 FAILED 和 DELAYED 的情况
+                Log.e(TAG, "Audio focus request was not granted. Result code: $result")
+            }
+        }
+
+        // 2. Failsafe: 将降低音量的操作移到 when 语句外部，确保它总是被执行。
+        Log.d(TAG, "Executing failsafe volume reduction.")
+        serviceScope.launch {
+            // 使用 adjustStreamVolume 循环降低音量直到为0
+            while (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) > 0) {
+                audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
+            }
+            Log.d(TAG, "Volume has been set to 0.")
+        }
     }
 
     private fun broadcastConnectionsUpdate() {
@@ -550,12 +607,13 @@ class ForegroundService : Service() {
     }
 
     private fun createMutePendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, MuteMediaReceiver::class.java).apply {
-            action = Constants.BROADCAST_ACTION_MUTE
+        val intent = Intent(context, ForegroundService::class.java).apply {
+            action = ACTION_MUTE_MEDIA
         }
-        return PendingIntent.getBroadcast(
+        // 注意：这里需要使用 getService，而不是 getBroadcast
+        return PendingIntent.getService(
             context,
-            REQUEST_CODE_MUTE,
+            REQUEST_CODE_MUTE, // 可以复用这个请求码
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
