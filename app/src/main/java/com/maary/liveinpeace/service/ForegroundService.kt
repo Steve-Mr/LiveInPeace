@@ -18,6 +18,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import android.util.SparseIntArray
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -112,11 +113,14 @@ class ForegroundService : Service() {
     private val protectionJobs = ConcurrentHashMap<String, Job>()
     private val deviceMapMutex = Mutex()
 
+    private val volumeIconMap = SparseIntArray()
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service creating...")
 
         initializeDependencies()
+        preloadVolumeIcons()
         registerReceiversAndCallbacks()
 
         // 启动前台服务，并立即更新一次通知状态
@@ -130,6 +134,17 @@ class ForegroundService : Service() {
     private fun initializeDependencies() {
         connectionDao = ConnectionRoomDatabase.getDatabase(applicationContext).connectionDao()
         volumeComment = resources.getStringArray(R.array.array_volume_comment)
+    }
+
+    @SuppressLint("DiscouragedApi")
+    private fun preloadVolumeIcons() {
+        for (i in 0..100) {
+            val resourceName = "num_$i"
+            val resourceId = resources.getIdentifier(resourceName, "drawable", packageName)
+            if (resourceId != 0) {
+                volumeIconMap.put(i, resourceId)
+            }
+        }
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -631,10 +646,9 @@ class ForegroundService : Service() {
         )
     }
 
-    @SuppressLint("DiscouragedApi")
     private fun generateNotificationIcon(context: Context, volumePercent: Int, volumeLevel: Int): IconCompat {
-        val resourceName = "num_${volumePercent}"
-        val resourceId = resources.getIdentifier(resourceName, "drawable", context.packageName)
+        // 直接从 SparseIntArray 中查找，速度极快
+        val resourceId = volumeIconMap.get(volumePercent, 0) // 第二个参数是找不到时的默认值
 
         return if (resourceId != 0) {
             IconCompat.createWithResource(this, resourceId)
