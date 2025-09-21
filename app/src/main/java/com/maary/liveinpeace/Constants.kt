@@ -44,7 +44,7 @@ class Constants {
         // 提醒时间
         const val ALERT_TIME: Long = 2*60*60*1000
         // 延后时间
-        const val DEBOUNCE_TIME_MS = 500
+        const val THROTTLE_TIME_MS = 100L
         // 不同通知的 GROUP ID
         const val ID_NOTIFICATION_GROUP_FORE = "LIP_notification_group_foreground"
         const val ID_NOTIFICATION_GROUP_ALERTS = "LIP_notification_group_alerts"
