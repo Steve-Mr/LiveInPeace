@@ -18,11 +18,13 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import android.util.SparseIntArray
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_UPDATE
 import com.maary.liveinpeace.DeviceTimer
 import com.maary.liveinpeace.R
 import com.maary.liveinpeace.SleepNotification.find
@@ -32,7 +34,6 @@ import com.maary.liveinpeace.database.ConnectionDao
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
 import com.maary.liveinpeace.database.PreferenceRepository
 import com.maary.liveinpeace.receiver.MuteMediaReceiver
-import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
@@ -111,11 +112,14 @@ class ForegroundService : Service() {
     private val protectionJobs = ConcurrentHashMap<String, Job>()
     private val deviceMapMutex = Mutex()
 
+    private val volumeIconMap = SparseIntArray()
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service creating...")
 
         initializeDependencies()
+        preloadVolumeIcons()
         registerReceiversAndCallbacks()
 
         // 启动前台服务，并立即更新一次通知状态
@@ -131,6 +135,17 @@ class ForegroundService : Service() {
         volumeComment = resources.getStringArray(R.array.array_volume_comment)
     }
 
+    @SuppressLint("DiscouragedApi")
+    private fun preloadVolumeIcons() {
+        for (i in 0..100) {
+            val resourceName = "num_$i"
+            val resourceId = resources.getIdentifier(resourceName, "drawable", packageName)
+            if (resourceId != 0) {
+                volumeIconMap.put(i, resourceId)
+            }
+        }
+    }
+
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun registerReceiversAndCallbacks() {
         // 注册音频设备回调
@@ -139,14 +154,6 @@ class ForegroundService : Service() {
         // 注册音量变化接收器
         val volumeFilter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
         registerReceiver(volumeChangeReceiver, volumeFilter)
-
-        // 注册休眠定时器更新接收器
-        val sleepFilter = IntentFilter(Constants.BROADCAST_ACTION_SLEEPTIMER_UPDATE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(sleepReceiver, sleepFilter, RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(sleepReceiver, sleepFilter)
-        }
     }
 
     @SuppressLint("MissingPermission")
@@ -168,6 +175,10 @@ class ForegroundService : Service() {
             ACTION_MUTE_MEDIA -> {
                 Log.d(TAG, "Mute media action received.")
                 handleMuteMedia()
+            }
+            BROADCAST_ACTION_SLEEPTIMER_UPDATE -> {
+                Log.d(TAG, "Sleep timer update action received via onStartCommand.")
+                updateForegroundNotification()
             }
         }
 
@@ -205,7 +216,6 @@ class ForegroundService : Service() {
 
         // 安全地反注册所有接收器和回调
         safeUnregisterReceiver(volumeChangeReceiver)
-        safeUnregisterReceiver(sleepReceiver)
         try {
             audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         } catch (e: Exception) {
@@ -540,12 +550,6 @@ class ForegroundService : Service() {
         }
     }
 
-    private val sleepReceiver = object : SleepReceiver() {
-        override fun updateNotification(context: Context) {
-            updateForegroundNotification()
-        }
-    }
-
     // --- 通知创建 ---
 
     private fun createForegroundNotification(context: Context): Notification {
@@ -619,10 +623,9 @@ class ForegroundService : Service() {
         )
     }
 
-    @SuppressLint("DiscouragedApi")
     private fun generateNotificationIcon(context: Context, volumePercent: Int, volumeLevel: Int): IconCompat {
-        val resourceName = "num_${volumePercent}"
-        val resourceId = resources.getIdentifier(resourceName, "drawable", context.packageName)
+        // 直接从 SparseIntArray 中查找，速度极快
+        val resourceId = volumeIconMap.get(volumePercent, 0) // 第二个参数是找不到时的默认值
 
         return if (resourceId != 0) {
             IconCompat.createWithResource(this, resourceId)
