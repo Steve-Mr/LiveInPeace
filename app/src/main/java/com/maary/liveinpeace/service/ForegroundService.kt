@@ -23,6 +23,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.maary.liveinpeace.Constants
+import com.maary.liveinpeace.Constants.Companion.BROADCAST_ACTION_SLEEPTIMER_UPDATE
 import com.maary.liveinpeace.DeviceTimer
 import com.maary.liveinpeace.R
 import com.maary.liveinpeace.SleepNotification.find
@@ -32,7 +33,7 @@ import com.maary.liveinpeace.database.ConnectionDao
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
 import com.maary.liveinpeace.database.PreferenceRepository
 import com.maary.liveinpeace.receiver.MuteMediaReceiver
-import com.maary.liveinpeace.receiver.SleepReceiver
+//import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
@@ -141,12 +142,12 @@ class ForegroundService : Service() {
         registerReceiver(volumeChangeReceiver, volumeFilter)
 
         // 注册休眠定时器更新接收器
-        val sleepFilter = IntentFilter(Constants.BROADCAST_ACTION_SLEEPTIMER_UPDATE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(sleepReceiver, sleepFilter, RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(sleepReceiver, sleepFilter)
-        }
+//        val sleepFilter = IntentFilter(Constants.BROADCAST_ACTION_SLEEPTIMER_UPDATE)
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//            registerReceiver(sleepReceiver, sleepFilter, RECEIVER_NOT_EXPORTED)
+//        } else {
+//            registerReceiver(sleepReceiver, sleepFilter)
+//        }
     }
 
     @SuppressLint("MissingPermission")
@@ -168,6 +169,10 @@ class ForegroundService : Service() {
             ACTION_MUTE_MEDIA -> {
                 Log.d(TAG, "Mute media action received.")
                 handleMuteMedia()
+            }
+            BROADCAST_ACTION_SLEEPTIMER_UPDATE -> {
+                Log.d(TAG, "Sleep timer update action received via onStartCommand.")
+                updateForegroundNotification()
             }
         }
 
@@ -205,7 +210,7 @@ class ForegroundService : Service() {
 
         // 安全地反注册所有接收器和回调
         safeUnregisterReceiver(volumeChangeReceiver)
-        safeUnregisterReceiver(sleepReceiver)
+//        safeUnregisterReceiver(sleepReceiver)
         try {
             audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         } catch (e: Exception) {
@@ -540,11 +545,18 @@ class ForegroundService : Service() {
         }
     }
 
-    private val sleepReceiver = object : SleepReceiver() {
-        override fun updateNotification(context: Context) {
-            updateForegroundNotification()
-        }
-    }
+//    private val sleepReceiver = object : SleepReceiver() {
+//        override fun onReceive(context: Context, intent: Intent) {
+//            // 在父类的 onReceive 中添加 Log
+//            Log.d("ForegroundService", "sleepReceiver received action: ${intent.action}") // <-- 添加这行 Log
+//            super.onReceive(context, intent)
+//        }
+//
+//        override fun updateNotification(context: Context) {
+//            Log.d("ForegroundService", "sleepReceiver is calling updateForegroundNotification()") // <-- 添加这行 Log
+//            updateForegroundNotification()
+//        }
+//    }
 
     // --- 通知创建 ---
 

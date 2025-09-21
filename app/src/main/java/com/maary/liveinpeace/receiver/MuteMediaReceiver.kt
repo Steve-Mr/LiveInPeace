@@ -29,15 +29,20 @@ class MuteMediaReceiver: BroadcastReceiver() {
         if (p1?.action == BROADCAST_ACTION_SLEEPTIMER_CANCEL ||
             p1?.action == BROADCAST_ACTION_SLEEPTIMER_INCREMENT ||
             p1?.action == BROADCAST_ACTION_SLEEPTIMER_DECREMENT) {
+
             p0?.handle(p1)
-            val intent = Intent(BROADCAST_ACTION_SLEEPTIMER_UPDATE)
-            p0?.sendBroadcast(intent)
+
+            val intent = Intent(p0, ForegroundService::class.java)
+            intent.action = BROADCAST_ACTION_SLEEPTIMER_UPDATE
+            p0?.startService(intent)
         }
 
         if (p1?.action == BROADCAST_ACTION_SLEEPTIMER_TOGGLE) {
             p0?.toggle()
-            val intent = Intent(BROADCAST_ACTION_SLEEPTIMER_UPDATE)
-            p0?.sendBroadcast(intent)
+
+            val intent = Intent(p0, ForegroundService::class.java)
+            intent.action = BROADCAST_ACTION_SLEEPTIMER_UPDATE
+            p0?.startService(intent)
         }
     }
 }
