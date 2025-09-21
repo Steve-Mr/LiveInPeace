@@ -34,7 +34,6 @@ import com.maary.liveinpeace.database.ConnectionDao
 import com.maary.liveinpeace.database.ConnectionRoomDatabase
 import com.maary.liveinpeace.database.PreferenceRepository
 import com.maary.liveinpeace.receiver.MuteMediaReceiver
-//import com.maary.liveinpeace.receiver.SleepReceiver
 import com.maary.liveinpeace.receiver.VolumeReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
@@ -155,14 +154,6 @@ class ForegroundService : Service() {
         // 注册音量变化接收器
         val volumeFilter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
         registerReceiver(volumeChangeReceiver, volumeFilter)
-
-        // 注册休眠定时器更新接收器
-//        val sleepFilter = IntentFilter(Constants.BROADCAST_ACTION_SLEEPTIMER_UPDATE)
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-//            registerReceiver(sleepReceiver, sleepFilter, RECEIVER_NOT_EXPORTED)
-//        } else {
-//            registerReceiver(sleepReceiver, sleepFilter)
-//        }
     }
 
     @SuppressLint("MissingPermission")
@@ -225,7 +216,6 @@ class ForegroundService : Service() {
 
         // 安全地反注册所有接收器和回调
         safeUnregisterReceiver(volumeChangeReceiver)
-//        safeUnregisterReceiver(sleepReceiver)
         try {
             audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
         } catch (e: Exception) {
@@ -559,19 +549,6 @@ class ForegroundService : Service() {
             updateForegroundNotification()
         }
     }
-
-//    private val sleepReceiver = object : SleepReceiver() {
-//        override fun onReceive(context: Context, intent: Intent) {
-//            // 在父类的 onReceive 中添加 Log
-//            Log.d("ForegroundService", "sleepReceiver received action: ${intent.action}") // <-- 添加这行 Log
-//            super.onReceive(context, intent)
-//        }
-//
-//        override fun updateNotification(context: Context) {
-//            Log.d("ForegroundService", "sleepReceiver is calling updateForegroundNotification()") // <-- 添加这行 Log
-//            updateForegroundNotification()
-//        }
-//    }
 
     // --- 通知创建 ---
 
