@@ -71,4 +71,7 @@
     <string name="safe_volume_threshold">Safe Volume Threshold</string>
     <string name="enable_watching_detail">Get notifications for prolonged headphone use.</string>
     <string name="protection_detail">Automatically adjusts headphone volume to a safe and comfortable level upon connection.</string>
+    <string name="volume_log_format">Vol: %1$s%% -> %2$s%%</string>
+    <string name="restore_system_volume">Restore Volume on Disconnect</string>
+    <string name="restore_volume_description">The system automatically adjusts volume when devices disconnect. \nEnable this to try restoring the pre-connection volume instead. \nFunctionality is not guaranteed.</string>
 </resources>
