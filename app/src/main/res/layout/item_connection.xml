@@ -55,4 +55,17 @@
         android:textSize="12sp"
         tools:text="3hrs"/>
 
+    <TextView
+        android:id="@+id/text_volume_log"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:layout_marginStart="8dp"
+        android:textColor="?android:attr/textColorSecondary"
+        tools:text="Vol: 20% -> 50%"
+        app:layout_constraintStart_toEndOf="@id/device_connection_time"
+        app:layout_constraintTop_toBottomOf="@id/device_name"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>
