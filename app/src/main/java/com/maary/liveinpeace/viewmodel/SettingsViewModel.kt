@@ -123,6 +123,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    val isVolumeRestoreEnabled: StateFlow<Boolean> = preferenceRepository.isVolumeRestoreEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun toggleVolumeRestore(enabled: Boolean) {
+        viewModelScope.launch {
+            preferenceRepository.setVolumeRestoreEnabled(enabled)
+        }
+    }
+
     init {
         checkAndSyncServiceState()
     }
