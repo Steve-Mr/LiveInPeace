@@ -16,4 +16,8 @@ data class Connection(
     @ColumnInfo(name = "disconnected_time") val disconnectedTime: Long?,
     @ColumnInfo(name = "duration") val duration: Long?,
     @ColumnInfo(name = "date") val date: String,
+
+    // 记录连接前和断开后的音量百分比 (0-100)
+    @ColumnInfo(name = "start_volume") val startVolume: Int? = null,
+    @ColumnInfo(name = "end_volume") val endVolume: Int? = null
     ) : Parcelable

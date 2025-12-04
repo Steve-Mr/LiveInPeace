@@ -12,6 +12,8 @@ class Constants {
         const val PREF_HIDE_IN_LAUNCHER = "hide_in_launcher"
         const val PREF_EAR_PROTECTION_THRESHOLD_MAX = "ear_protection_max"
         const val PREF_EAR_PROTECTION_THRESHOLD_MIN = "ear_protection_min"
+        const val PREF_RESTORE_VOLUME = "restore_volume_after_disconnect"
+        const val PREF_LAST_SYSTEM_VOLUME = "last_system_volume_before_connect"
         const val EAR_PROTECTION_LOWER_THRESHOLD = 10
         const val EAR_PROTECTION_UPPER_THRESHOLD = 25
         // 前台通知 id

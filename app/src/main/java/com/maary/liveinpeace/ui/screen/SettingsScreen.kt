@@ -128,6 +128,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
 
             val isProtectionOn by settingsViewModel.protectionSwitchState.collectAsState()
             val isForegroundEnabled by settingsViewModel.foregroundSwitchState.collectAsState()
+            val isVolumeRestoreEnabled by settingsViewModel.isVolumeRestoreEnabled.collectAsState()
 
             Spacer(modifier = Modifier.height(16.dp + innerPadding.calculateTopPadding()))
 
@@ -192,6 +193,18 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
                         range = settingsViewModel.earProtectionThreshold.collectAsState().value,
                         onValueChangeFinished = { settingsViewModel.setEarProtectionThreshold(it) },
                     )
+                }
+            }
+
+            SettingsItem(
+                position = GroupPosition.MIDDLE ,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer) {
+                SwitchRow(
+                    title = stringResource(R.string.restore_system_volume),
+                    description = stringResource(R.string.restore_volume_description),
+                    state = isVolumeRestoreEnabled,
+                ) {
+                    settingsViewModel.toggleVolumeRestore(it)
                 }
             }
 

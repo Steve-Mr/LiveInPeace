@@ -36,6 +36,8 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
         val PREF_VISIBLE_IN_LAUNCHER = booleanPreferencesKey(Constants.PREF_HIDE_IN_LAUNCHER)
         val PREF_EAR_PROTECTION_THRESHOLD_MAX = intPreferencesKey(Constants.PREF_EAR_PROTECTION_THRESHOLD_MAX)
         val PREF_EAR_PROTECTION_THRESHOLD_MIN = intPreferencesKey(Constants.PREF_EAR_PROTECTION_THRESHOLD_MIN)
+        val PREF_RESTORE_VOLUME = booleanPreferencesKey(Constants.PREF_RESTORE_VOLUME)
+        val PREF_LAST_SYSTEM_VOLUME = intPreferencesKey(Constants.PREF_LAST_SYSTEM_VOLUME)
     }
 
     fun getWatchingState(): Flow<Boolean> {
@@ -124,6 +126,28 @@ class PreferenceRepository @Inject constructor(@ApplicationContext context: Cont
         datastore.edit { pref ->
             pref[PREF_EAR_PROTECTION_THRESHOLD_MIN] = range.first
             pref[PREF_EAR_PROTECTION_THRESHOLD_MAX] = range.last
+        }
+    }
+
+    // 获取设置状态
+    fun isVolumeRestoreEnabled(): Flow<Boolean> {
+        return datastore.data.map { pref ->
+            pref[PREF_RESTORE_VOLUME] ?: false
+        }
+    }
+
+    // 切换设置
+    suspend fun setVolumeRestoreEnabled(enabled: Boolean) {
+        datastore.edit { preferences -> preferences[PREF_RESTORE_VOLUME] = enabled }
+    }
+
+    fun getLastSystemVolume(): Flow<Int> = datastore.data
+        .map { preferences -> preferences[PREF_LAST_SYSTEM_VOLUME] ?: -1 }
+
+    // 更新系统音量记录
+    suspend fun saveLastSystemVolume(volume: Int) {
+        datastore.edit { preferences ->
+            preferences[PREF_LAST_SYSTEM_VOLUME] = volume
         }
     }
 }
