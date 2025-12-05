@@ -25,7 +25,12 @@ class ConnectionListAdapter : ListAdapter<Connection, ConnectionListAdapter.Conn
 
     override fun onBindViewHolder(holder: ConnectionViewHolder, position: Int) {
         val current = getItem(position)
-        holder.bind( current.name, current.type, current.duration, current.disconnectedTime)
+        holder.bind( current.name,
+            current.type,
+            current.duration,
+            current.disconnectedTime,
+            current.startVolume,
+            current.endVolume)
     }
 
     class ConnectionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -33,8 +38,9 @@ class ConnectionListAdapter : ListAdapter<Connection, ConnectionListAdapter.Conn
         private val connectionDeviceNameView: TextView = itemView.findViewById(R.id.device_name)
         private val connectionDurationView: TextView = itemView.findViewById(R.id.device_connection_time)
         private val connectionIndicatorView: ImageView = itemView.findViewById(R.id.connection_time_prefix)
+        private val connectionVolumeLogView: TextView = itemView.findViewById(R.id.text_volume_log)
 
-        fun bind(deviceName: String?, type: Int?, duration: Long?, disconnectedTime: Long?) {
+        fun bind(deviceName: String?, type: Int?, duration: Long?, disconnectedTime: Long?, startVol: Int? = null, endVol: Int? = null) {
             connectionIconView.setImageResource(
                 chooseDeviceDrawable(
                     type = type,
@@ -56,6 +62,15 @@ class ConnectionListAdapter : ListAdapter<Connection, ConnectionListAdapter.Conn
                         drawableHeadphone = R.drawable.ic_headphone_round_alt,
                         drawableBLE = R.drawable.ic_bluetooth_round_alt))
             }
+
+            if (startVol == null || endVol == null) connectionVolumeLogView.visibility = View.GONE
+            else {
+                val startVolString = startVol.toString()
+                val endVolString = endVol.toString()
+                connectionVolumeLogView.visibility = View.VISIBLE
+                connectionVolumeLogView.text = itemView.context.getString(R.string.volume_log_format, startVolString, endVolString)
+            }
+
         }
 
         companion object {

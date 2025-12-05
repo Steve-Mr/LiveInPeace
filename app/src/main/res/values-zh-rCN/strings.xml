@@ -67,4 +67,8 @@
     <string name="safe_volume_threshold">安全音量阈值</string>
     <string name="enable_watching_detail">长时间使用耳机时会受到通知提醒。</string>
     <string name="protection_detail">连接耳机时，自动将音量调整到合适的范围。</string>
+    <string name="volume_log_format">音量: %1$s%% -> %2$s%%</string>
+    <string name="restore_system_volume">断开时恢复音量</string>
+    <string name="restore_volume_description">设备断开后系统会自动调整音量。\n开启此项将尝试强制恢复到连接前的音量。\n实验性功能，不保证生效。</string>
+
 </resources>

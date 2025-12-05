@@ -43,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -113,6 +114,8 @@ class ForegroundService : Service() {
     private val deviceMapMutex = Mutex()
 
     private val volumeIconMap = SparseIntArray()
+
+    private var lastKnownSystemVolumeCache: Int = -1
 
     override fun onCreate() {
         super.onCreate()
@@ -324,6 +327,9 @@ class ForegroundService : Service() {
             var wasAdded = false
             deviceMapMutex.withLock {
                 if (!deviceMap.containsKey(deviceName)) {
+                    val savedVolume = preferenceRepository.getLastSystemVolume().first()
+                    val startVol = if (savedVolume != -1) savedVolume else getVolumePercentage()
+
                     Log.d(CALLBACK_TAG, "Device Added: $deviceName")
                     deviceMap[deviceName] = Connection(
                         name = deviceName,
@@ -331,7 +337,9 @@ class ForegroundService : Service() {
                         connectedTime = System.currentTimeMillis(),
                         disconnectedTime = null,
                         duration = null,
-                        date = LocalDate.now().toString()
+                        date = LocalDate.now().toString(),
+                        startVolume = startVol,
+                        endVolume = null
                     )
                     wasAdded = true
 
@@ -365,6 +373,16 @@ class ForegroundService : Service() {
                             disconnectedTime = disconnectedTime,
                             duration = duration
                         )
+
+//                        if (preferenceRepository.isVolumeRestoreEnabled().first()) {
+//                            connection.startVolume?.let { startVol ->
+//                                Log.d(TAG, "Restoring volume to $startVol% for disconnect of $deviceName")
+//                                val targetIndex = percentageToVolumeIndex(startVol)
+//                                // 使用 FLAG_SHOW_UI 可以让用户看到音量变化的滑块，方便调试确认
+//                                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, AudioManager.FLAG_SHOW_UI)
+//                            }
+//                        }
+
                         if (duration > Constants.ALERT_TIME) {
                             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                             notificationManager.cancel(Constants.ID_NOTIFICATION_ALERT)
@@ -372,6 +390,37 @@ class ForegroundService : Service() {
                     }
                 }
             }
+
+            // [第二步] 在锁释放后：等待系统切换、读取音量、恢复音量
+            // 这样做可以避免阻塞其他设备的连接/断开处理
+            if (connectionToSave != null) {
+                // [核心修改] 延迟 600ms，等待系统将音频输出切换回扬声器并更新音量状态
+                // 具体的毫秒数可能因机型而异，500-800ms 通常是安全的
+                delay(600)
+
+                // 此时获取的音量应该是系统切换后的音量（即“断开后”的真实状态）
+                val currentVol = getVolumePercentage()
+
+                // 更新 endVolume
+                val finalConnection = connectionToSave.copy(endVolume = currentVol)
+
+                // [音量恢复逻辑]
+                // 再次检查是否所有设备都已断开。
+                // 如果此时用户迅速插入了另一个耳机，deviceMap 就不为空，我们就不应该执行“恢复扬声器音量”的操作，以免干扰新设备。
+                val isMapEmpty = deviceMapMutex.withLock { deviceMap.isEmpty() }
+
+                if (isMapEmpty && preferenceRepository.isVolumeRestoreEnabled().first()) {
+                    finalConnection.startVolume?.let { startVol ->
+                        Log.d(CALLBACK_TAG, "Restoring volume to $startVol% for disconnect of $deviceName")
+                        // 使用之前定义的辅助函数 percentageToVolumeIndex
+                        val targetIndex = percentageToVolumeIndex(startVol)
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, AudioManager.FLAG_SHOW_UI)
+                    }
+                }
+
+                return finalConnection
+            }
+
             return connectionToSave
         }
 
@@ -442,6 +491,19 @@ class ForegroundService : Service() {
             Log.w(TAG, "Cannot update notification: Permission denied.")
             return
         }
+
+        if (deviceMap.isEmpty()) {
+            val currentVolume = getVolumePercentage()
+
+            if (currentVolume != lastKnownSystemVolumeCache) {
+                lastKnownSystemVolumeCache = currentVolume
+                serviceScope.launch {
+                    preferenceRepository.saveLastSystemVolume(currentVolume)
+                }
+                Log.d(TAG, "Updated internal system volume record: $currentVolume%")
+            }
+        }
+
         NotificationManagerCompat.from(this).notify(
             Constants.ID_NOTIFICATION_FOREGROUND,
             createForegroundNotification(this)
@@ -530,6 +592,11 @@ class ForegroundService : Service() {
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         return if (maxVolume > 0) 100 * currentVolume / maxVolume else 0
+    }
+
+    private fun percentageToVolumeIndex(percent: Int): Int {
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        return ((percent * maxVolume) + 50) / 100
     }
 
     private fun getVolumeLevel(percent: Int): Int {
