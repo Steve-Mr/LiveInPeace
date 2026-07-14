@@ -42,6 +42,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -299,12 +301,18 @@ class ForegroundService : Service() {
             if (removedDevices.isNullOrEmpty()) return
 
             serviceScope.launch {
-                removedDevices.filterNot { shouldIgnoreDevice(it) }.forEach { deviceInfo ->
-                    val deviceName = getDeviceName(deviceInfo)
-                    processRemovedDevice(deviceName)?.let { connectionToSave ->
-                        saveConnectionToDatabase(connectionToSave)
+                val deferredJobs = removedDevices.filterNot { shouldIgnoreDevice(it) }.map { deviceInfo ->
+                    async {
+                        val deviceName = getDeviceName(deviceInfo)
+                        processRemovedDevice(deviceName)?.let { connectionToSave ->
+                            saveConnectionToDatabase(connectionToSave)
+                        }
                     }
                 }
+
+                // 等待所有设备的断开逻辑（包含可能的 delay）并发执行完毕
+                deferredJobs.awaitAll()
+
                 onDeviceListChanged()
             }
         }
@@ -327,10 +335,16 @@ class ForegroundService : Service() {
             var wasAdded = false
             deviceMapMutex.withLock {
                 if (!deviceMap.containsKey(deviceName)) {
-                    val savedVolume = preferenceRepository.getLastSystemVolume().first()
-                    val startVol = if (savedVolume != -1) savedVolume else getVolumePercentage()
+                    // 优先使用内存中缓存的扬声器音量（更及时，避免了 Preference 存储的异步延迟）
+                    val memVol = lastKnownSystemVolumeCache
+                    val startVol = if (memVol != -1) {
+                        memVol
+                    } else {
+                        val savedVolume = preferenceRepository.getLastSystemVolume().first()
+                        if (savedVolume != -1) savedVolume else getVolumePercentage()
+                    }
 
-                    Log.d(CALLBACK_TAG, "Device Added: $deviceName")
+                    Log.d(CALLBACK_TAG, "Device Added: $deviceName. startVol: $startVol (memVol: $memVol)")
                     deviceMap[deviceName] = Connection(
                         name = deviceName,
                         type = deviceInfo.type,
@@ -437,22 +451,27 @@ class ForegroundService : Service() {
             val protectionJob = serviceScope.launch {
                 try {
                     Log.d(CALLBACK_TAG, "Applying ear protection for $deviceName")
+
+                    // 等待系统音频路由切换完成，避免获取到切换前的扬声器音量
+                    delay(500)
+
                     var protectionApplied = false
-
                     val threshold = preferenceRepository.getEarProtectionThreshold().first()
+                    val currentVolumePercent = getVolumePercentage()
 
-                    // 调整音量到安全范围
-                    while (getVolumePercentage() > threshold.last && isActive) {
-                        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
+                    // 检查并调整音量到安全范围
+                    if (currentVolumePercent > threshold.last) {
+                        val targetIndex = percentageToVolumeIndex(threshold.last)
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
                         protectionApplied = true
-                    }
-                    while (getVolumePercentage() < threshold.first && isActive) {
-                        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
+                    } else if (currentVolumePercent < threshold.first) {
+                        val targetIndex = percentageToVolumeIndex(threshold.first)
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
                         protectionApplied = true
                     }
 
                     if (protectionApplied) {
-                        Log.d(CALLBACK_TAG, "Ear protection applied for $deviceName.")
+                        Log.d(CALLBACK_TAG, "Ear protection applied for $deviceName. Volume set to safe threshold.")
                         showProtectionNotification()
                     }
                 } catch (_: CancellationException) {
@@ -569,6 +588,7 @@ class ForegroundService : Service() {
 
     private fun broadcastConnectionsUpdate() {
         val intent = Intent(Constants.BROADCAST_ACTION_CONNECTIONS_UPDATE).apply {
+            setPackage(packageName)
             putParcelableArrayListExtra(
                 Constants.EXTRA_CONNECTIONS_LIST,
                 ArrayList(deviceMap.values)
@@ -582,6 +602,7 @@ class ForegroundService : Service() {
             preferenceRepository.setServiceRunning(isRunning)
         }
         val intent = Intent(Constants.BROADCAST_ACTION_FOREGROUND).apply {
+            setPackage(packageName)
             putExtra(Constants.BROADCAST_FOREGROUND_INTENT_EXTRA, isRunning)
         }
         sendBroadcast(intent)
