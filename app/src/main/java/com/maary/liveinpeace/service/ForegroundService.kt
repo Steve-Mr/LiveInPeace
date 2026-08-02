@@ -42,8 +42,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -117,6 +115,7 @@ class ForegroundService : Service() {
 
     private val volumeIconMap = SparseIntArray()
 
+    @Volatile
     private var lastKnownSystemVolumeCache: Int = -1
 
     override fun onCreate() {
@@ -301,17 +300,16 @@ class ForegroundService : Service() {
             if (removedDevices.isNullOrEmpty()) return
 
             serviceScope.launch {
-                val deferredJobs = removedDevices.filterNot { shouldIgnoreDevice(it) }.map { deviceInfo ->
-                    async {
-                        val deviceName = getDeviceName(deviceInfo)
-                        processRemovedDevice(deviceName)?.let { connectionToSave ->
-                            saveConnectionToDatabase(connectionToSave)
+                kotlinx.coroutines.supervisorScope {
+                    removedDevices.filterNot { shouldIgnoreDevice(it) }.forEach { deviceInfo ->
+                        launch {
+                            val deviceName = getDeviceName(deviceInfo)
+                            processRemovedDevice(deviceName)?.let { connectionToSave ->
+                                saveConnectionToDatabase(connectionToSave)
+                            }
                         }
                     }
                 }
-
-                // 等待所有设备的断开逻辑（包含可能的 delay）并发执行完毕
-                deferredJobs.awaitAll()
 
                 onDeviceListChanged()
             }
@@ -459,15 +457,21 @@ class ForegroundService : Service() {
                     val threshold = preferenceRepository.getEarProtectionThreshold().first()
                     val currentVolumePercent = getVolumePercentage()
 
+                    val currentVolumeIndex = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+
                     // 检查并调整音量到安全范围
                     if (currentVolumePercent > threshold.last) {
                         val targetIndex = percentageToVolumeIndex(threshold.last)
-                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
-                        protectionApplied = true
+                        if (targetIndex < currentVolumeIndex) {
+                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
+                            protectionApplied = true
+                        }
                     } else if (currentVolumePercent < threshold.first) {
                         val targetIndex = percentageToVolumeIndex(threshold.first)
-                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
-                        protectionApplied = true
+                        if (targetIndex > currentVolumeIndex) {
+                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
+                            protectionApplied = true
+                        }
                     }
 
                     if (protectionApplied) {
