@@ -205,6 +205,7 @@ class ForegroundService : Service() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(Constants.ID_NOTIFICATION_FOREGROUND)
+        notificationManager.cancel(Constants.ID_NOTIFICATION_GROUP_SUMMARY)
 
         Log.d(TAG, "Service destroyed.")
         super.onDestroy()
@@ -527,7 +528,12 @@ class ForegroundService : Service() {
             }
         }
 
-        NotificationManagerCompat.from(this).notify(
+        val notificationManager = NotificationManagerCompat.from(this)
+        notificationManager.notify(
+            Constants.ID_NOTIFICATION_GROUP_SUMMARY,
+            createGroupSummaryNotification(this)
+        )
+        notificationManager.notify(
             Constants.ID_NOTIFICATION_FOREGROUND,
             createForegroundNotification(this)
         )
@@ -666,6 +672,20 @@ class ForegroundService : Service() {
             .setGroup(Constants.ID_NOTIFICATION_GROUP_FORE)
             .addAction(createSettingsAction(context))
             .addAction(createSleepTimerAction(context))
+            .build()
+    }
+
+    private fun createGroupSummaryNotification(context: Context): Notification {
+        val currentVolume = getVolumePercentage()
+        val volumeLevel = getVolumeLevel(currentVolume)
+
+        return NotificationCompat.Builder(this, Constants.CHANNEL_ID_DEFAULT)
+            .setSmallIcon(generateNotificationIcon(context, currentVolume, volumeLevel))
+            .setOnlyAlertOnce(true)
+            .setOngoing(true)
+            .setGroup(Constants.ID_NOTIFICATION_GROUP_FORE)
+            .setGroupSummary(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }
 
