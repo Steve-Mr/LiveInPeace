@@ -21,6 +21,7 @@ class Constants {
         const val ID_NOTIFICATION_ALERT = 2
         const val ID_NOTIFICATION_PROTECT = 4
         const val ID_NOTIFICATION_SLEEPTIMER = 5
+        const val ID_NOTIFICATION_GROUP_SUMMARY = 6
         // 静音广播名称
         const val BROADCAST_ACTION_MUTE = "com.maary.liveinpeace.MUTE_MEDIA"
         const val BROADCAST_ACTION_SLEEPTIMER_CANCEL = "com.maary.liveinpeace.action.CANCEL"
@@ -48,10 +49,11 @@ class Constants {
         // 延后时间
         const val THROTTLE_TIME_MS = 100L
         // 不同通知的 GROUP ID
-        const val ID_NOTIFICATION_GROUP_FORE = "LIP_notification_group_foreground"
+        const val ID_NOTIFICATION_GROUP_LIP = "LIP_notification_group_main"
+        const val ID_NOTIFICATION_GROUP_FORE = ID_NOTIFICATION_GROUP_LIP
         const val ID_NOTIFICATION_GROUP_ALERTS = "LIP_notification_group_alerts"
         const val ID_NOTIFICATION_GROUP_PROTECT = "LIP_notification_group_protect"
-        const val ID_NOTIFICATION_GROUP_SLEEPTIMER = "LIP_notification_group_sleeptimer"
+        const val ID_NOTIFICATION_GROUP_SLEEPTIMER = ID_NOTIFICATION_GROUP_LIP
         const val PATTERN_DATE_DATABASE = "yyyy-MM-dd"
         const val PATTERN_DATE_BUTTON = "MM/dd"
 
